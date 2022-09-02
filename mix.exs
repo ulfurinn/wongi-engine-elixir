@@ -21,8 +21,13 @@ defmodule WongiEngine.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      ulfnet_ref(Mix.env())
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
+
+  defp ulfnet_ref(:dev), do: {:ulfnet_ref, path: "../ulfnet_ref"}
+  defp ulfnet_ref(:test), do: {:ulfnet_ref, path: "../ulfnet_ref"}
+  defp ulfnet_ref(:prod), do: {:ulfnet_ref, "~> 0.1.0"}
 end
