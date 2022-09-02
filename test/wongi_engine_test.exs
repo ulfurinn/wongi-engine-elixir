@@ -1,8 +1,8 @@
 defmodule WongiEngineTest do
   use ExUnit.Case
-  doctest WongiEngine
+  doctest Wongi.Engine
 
   test "greets the world" do
-    assert WongiEngine.hello() == :world
+    assert Wongi.Engine.hello() == :world
   end
 end

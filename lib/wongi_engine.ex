@@ -1,6 +1,6 @@
-defmodule WongiEngine do
+defmodule Wongi.Engine do
   @moduledoc """
-  Documentation for `WongiEngine`.
+  Documentation for `Wongi.Engine`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule WongiEngine do
 
   ## Examples
 
-      iex> WongiEngine.hello()
+      iex> Wongi.Engine.hello()
       :world
 
   """
