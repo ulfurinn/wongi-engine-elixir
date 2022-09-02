@@ -1,21 +1,6 @@
-# WongiEngine
+# Wongi.Engine
 
-**TODO: Add description**
+This is a rule engine implementing the Rete algorithm.
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `wongi_engine` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:wongi_engine, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/wongi_engine>.
-
+It is a port of [the Ruby library](https://github.com/ulfurinn/wongi-engine)
+of the same name to Elixir. It is not finished and should not be used yet.
