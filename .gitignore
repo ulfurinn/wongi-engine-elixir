@@ -1,10 +1,12 @@
 /_build
+/.elixir_ls
+/.fetch
+/config/*.secret.exs
 /cover
 /deps
 /doc
-/.fetch
-erl_crash.dump
-*.ez
+/tmp
 *.beam
-/config/*.secret.exs
-.elixir_ls/
+*.ez
+erl_crash.dump
+wongi_engine-*.tar
