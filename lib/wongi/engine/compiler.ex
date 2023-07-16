@@ -4,7 +4,6 @@ defmodule Wongi.Engine.Compiler do
   alias Wongi.Engine.Beta.Production
   alias Wongi.Engine.DSL.Clause
   alias Wongi.Engine.DSL.Rule
-  alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.Rete
 
   defstruct [:rete, :node_ref, :variables]
@@ -28,10 +27,6 @@ defmodule Wongi.Engine.Compiler do
     |> Rete.beta_subscriptions(node_ref)
     |> Enum.find(&Beta.equivalent?(&1, node, rete))
   end
-
-  def dynamic?(%Var{}), do: true
-  def dynamic?(:_), do: true
-  def dynamic?(_), do: false
 
   def declare_variable(%__MODULE__{variables: variables} = context, var) do
     %__MODULE__{context | variables: MapSet.put(variables, var)}

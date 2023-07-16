@@ -1,36 +1,30 @@
 # credo:disable-for-this-file Credo.Check.Refactor.Nesting
-defmodule Wongi.Engine.DSL.Has do
+defmodule Wongi.Engine.DSL.Neg do
   @moduledoc false
   alias Wongi.Engine.DSL
+
   defstruct [:subject, :predicate, :object]
 
-  def new(subject, predicate, object) do
-    %__MODULE__{
-      subject: subject,
-      predicate: predicate,
-      object: object
-    }
-  end
+  def new(s, p, o), do: %__MODULE__{subject: s, predicate: p, object: o}
 
   defimpl DSL.Clause do
     import Wongi.Engine.Compiler
 
-    alias Wongi.Engine.Beta.Join
+    alias Wongi.Engine.Beta.Negative
     alias Wongi.Engine.DSL.Var
     alias Wongi.Engine.Rete
     alias Wongi.Engine.WME
 
-    def compile(%@for{subject: s, predicate: p, object: o} = clause, context) do
-      {context, tests, assignments} =
+    def compile(%{subject: s, predicate: p, object: o} = clause, context) do
+      {context, tests} =
         [:subject, :predicate, :object]
-        |> Enum.reduce({context, %{}, %{}}, fn field, {context, tests, assignments} = acc ->
+        |> Enum.reduce({context, %{}}, fn field, {context, tests} = acc ->
           case Map.get(clause, field) do
             %Var{name: var} ->
               if MapSet.member?(context.variables, var) do
-                {context, Map.put(tests, field, var), assignments}
+                {context, Map.put(tests, field, var)}
               else
-                context = context |> declare_variable(var)
-                {context, tests, Map.put(assignments, field, var)}
+                raise "unbound varaible #{var} in neg clause; neg nodes may not introduce new variables"
               end
 
             _ ->
@@ -40,7 +34,7 @@ defmodule Wongi.Engine.DSL.Has do
 
       template = WME.template(s, p, o)
 
-      node = Join.new(context.node_ref, template, tests, assignments)
+      node = Negative.new(context.node_ref, template, tests)
 
       case find_existing(context, node) do
         nil ->

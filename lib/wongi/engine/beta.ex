@@ -56,3 +56,37 @@ defimpl Wongi.Engine.Beta, for: Reference do
     |> Beta.beta_deactivate(token, rete)
   end
 end
+
+defmodule Wongi.Engine.Beta.Common do
+  @moduledoc false
+  alias Wongi.Engine.Beta
+  alias Wongi.Engine.Rete
+  alias Wongi.Engine.Token
+  alias Wongi.Engine.WME
+
+  def beta_activate(betas, token_ctor, rete) do
+    Enum.reduce(betas, rete, fn beta, rete ->
+      Beta.beta_activate(beta, token_ctor.(beta), rete)
+    end)
+  end
+
+  def beta_deactivate(betas, %Token{} = token, rete) do
+    Enum.reduce(betas, rete, fn beta, rete ->
+      Rete.tokens(rete, beta)
+      |> Enum.filter(&Token.child_of?(&1, token))
+      |> Enum.reduce(rete, fn token, rete ->
+        Beta.beta_deactivate(beta, token, rete)
+      end)
+    end)
+  end
+
+  def beta_deactivate(betas, %WME{} = wme, rete) do
+    Enum.reduce(betas, rete, fn beta, rete ->
+      Rete.tokens(rete, beta)
+      |> Enum.filter(&Token.has_wme?(&1, wme))
+      |> Enum.reduce(rete, fn token, rete ->
+        Beta.beta_deactivate(beta, token, rete)
+      end)
+    end)
+  end
+end

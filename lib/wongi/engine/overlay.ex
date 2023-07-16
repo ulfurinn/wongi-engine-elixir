@@ -2,13 +2,84 @@ defmodule Wongi.Engine.Overlay do
   @moduledoc false
   alias Wongi.Engine.AlphaIndex
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.Token
   alias Wongi.Engine.WME
+
+  defmodule JoinResults do
+    @moduledoc false
+    defstruct [:by_wme, :by_token]
+
+    def new do
+      %__MODULE__{
+        by_wme: %{},
+        by_token: %{}
+      }
+    end
+
+    def put(%__MODULE__{by_wme: by_wme, by_token: by_token}, token, wme) do
+      by_wme =
+        by_wme
+        |> Map.put_new_lazy(wme, &MapSet.new/0)
+        |> Map.update!(wme, &MapSet.put(&1, {token, wme}))
+
+      by_token =
+        by_token
+        |> Map.put_new_lazy(token, &MapSet.new/0)
+        |> Map.update!(token, &MapSet.put(&1, {token, wme}))
+
+      %__MODULE__{
+        by_wme: by_wme,
+        by_token: by_token
+      }
+    end
+
+    def delete(%__MODULE__{by_wme: by_wme, by_token: by_token}, {token, wme} = jr) do
+      by_wme =
+        by_wme
+        |> Map.update!(wme, &MapSet.delete(&1, jr))
+        |> delete_if(wme, &Enum.empty?/1)
+
+      by_token =
+        by_token
+        |> Map.update!(token, &MapSet.delete(&1, jr))
+        |> delete_if(token, &Enum.empty?/1)
+
+      %__MODULE__{
+        by_wme: by_wme,
+        by_token: by_token
+      }
+    end
+
+    def delete(%__MODULE__{by_token: by_token} = njrs, %Token{} = token) do
+      case Map.fetch(by_token, token) do
+        {:ok, jrs} -> Enum.reduce(jrs, njrs, &delete(&2, &1))
+        _ -> njrs
+      end
+    end
+
+    def get(%__MODULE__{by_wme: by_wme}, %WME{} = wme) do
+      Map.get_lazy(by_wme, wme, &MapSet.new/0)
+    end
+
+    def get(%__MODULE__{by_token: by_token}, %Token{} = token) do
+      Map.get_lazy(by_token, token, &MapSet.new/0)
+    end
+
+    defp delete_if(%{} = map, key, predicate) do
+      if predicate.(Map.get(map, key)) do
+        Map.delete(map, key)
+      else
+        map
+      end
+    end
+  end
 
   defstruct [
     :wmes,
     :indexes,
     :manual,
-    :tokens
+    :tokens,
+    :neg_join_results
   ]
 
   @index_patterns [
@@ -28,7 +99,8 @@ defmodule Wongi.Engine.Overlay do
           {pattern, AlphaIndex.new(pattern)}
         end,
       manual: MapSet.new(),
-      tokens: %{}
+      tokens: %{},
+      neg_join_results: JoinResults.new()
     }
   end
 
@@ -63,8 +135,10 @@ defmodule Wongi.Engine.Overlay do
     end
   end
 
-  def delete_wme(overlay, wme) do
-    if !has_manual?(%__MODULE__{wmes: wmes} = overlay, wme) do
+  defp can_delete_wme?(overlay, wme), do: !has_manual?(overlay, wme)
+
+  def delete_wme(%__MODULE__{wmes: wmes} = overlay, wme) do
+    if can_delete_wme?(overlay, wme) do
       %__MODULE__{overlay | wmes: MapSet.delete(wmes, wme)}
       |> unindex(wme)
     else
@@ -95,6 +169,7 @@ defmodule Wongi.Engine.Overlay do
       {:ok, node_tokens} ->
         overlay
         |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
+        |> remove_neg_join_result(token)
 
       :error ->
         overlay
@@ -123,6 +198,25 @@ defmodule Wongi.Engine.Overlay do
     %__MODULE__{overlay | indexes: indexes}
   end
 
+  def add_neg_join_result(%__MODULE__{neg_join_results: jrs} = overlay, token, wme) do
+    overlay
+    |> put_neg_join_results(JoinResults.put(jrs, token, wme))
+  end
+
+  def remove_neg_join_result(%__MODULE__{neg_join_results: jrs} = overlay, token, wme) do
+    overlay
+    |> put_neg_join_results(JoinResults.delete(jrs, {token, wme}))
+  end
+
+  def remove_neg_join_result(%__MODULE__{neg_join_results: jrs} = overlay, token) do
+    overlay
+    |> put_neg_join_results(JoinResults.delete(jrs, token))
+  end
+
+  def neg_join_results(%__MODULE__{neg_join_results: jrs}, token_or_wme) do
+    JoinResults.get(jrs, token_or_wme)
+  end
+
   def set_manual(%__MODULE__{manual: manual} = overlay, wme) do
     %__MODULE__{overlay | manual: MapSet.put(manual, wme)}
   end
@@ -137,6 +231,10 @@ defmodule Wongi.Engine.Overlay do
 
   defp put_tokens(%__MODULE__{} = overlay, node_ref, tokens) do
     %__MODULE__{overlay | tokens: Map.put(overlay.tokens, node_ref, tokens)}
+  end
+
+  defp put_neg_join_results(overlay, jrs) do
+    %__MODULE__{overlay | neg_join_results: jrs}
   end
 
   defimpl Inspect do

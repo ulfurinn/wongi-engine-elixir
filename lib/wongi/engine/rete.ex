@@ -114,10 +114,16 @@ defmodule Wongi.Engine.Rete do
   def subscribe_to_alpha(rete, [s, p, o], node),
     do: subscribe_to_alpha(rete, WME.new(s, p, o), node)
 
+  def add_beta(%__MODULE__{beta_table: beta_table} = rete, node) do
+    rete
+    |> put_beta_table(Map.put(beta_table, Beta.ref(node), node))
+    |> subscribe_to_beta(Beta.parent_ref(node), Beta.ref(node))
+  end
+
   def subscribe_to_beta(%__MODULE__{beta_subscriptions: beta_subscriptions} = rete, parent, child)
       when is_reference(parent) and is_reference(child) do
     rete
-    |> put_beta_subscriptions(beta_subscribe(beta_subscriptions, parent, child))
+    |> put_beta_subscriptions(subscribe_to_beta(beta_subscriptions, parent, child))
   end
 
   def subscribe_to_beta(%__MODULE__{} = rete, parent, child)
@@ -125,10 +131,9 @@ defmodule Wongi.Engine.Rete do
     subscribe_to_beta(rete, parent, Beta.ref(child))
   end
 
-  def add_beta(%__MODULE__{beta_table: beta_table} = rete, node) do
-    rete
-    |> put_beta_table(Map.put(beta_table, Beta.ref(node), node))
-    |> subscribe_to_beta(Beta.parent_ref(node), Beta.ref(node))
+  def subscribe_to_beta(subscriptions, parent, child) do
+    parent_subs = Map.get(subscriptions, parent, [])
+    Map.put(subscriptions, parent, [child | parent_subs])
   end
 
   def get_beta(%__MODULE__{beta_table: beta_table}, ref) when is_reference(ref) do
@@ -254,9 +259,18 @@ defmodule Wongi.Engine.Rete do
     Overlay.tokens(overlay, node)
   end
 
-  defp beta_subscribe(subscriptions, parent, child) do
-    parent_subs = Map.get(subscriptions, parent, [])
-    Map.put(subscriptions, parent, [child | parent_subs])
+  def add_neg_join_result(%__MODULE__{overlay: overlay} = rete, token, wme) do
+    rete
+    |> put_overlay(Overlay.add_neg_join_result(overlay, token, wme))
+  end
+
+  def remove_neg_join_result(%__MODULE__{overlay: overlay} = rete, token, wme) do
+    rete
+    |> put_overlay(Overlay.remove_neg_join_result(overlay, token, wme))
+  end
+
+  def neg_join_results(%__MODULE__{overlay: overlay}, token_or_wme) do
+    Overlay.neg_join_results(overlay, token_or_wme)
   end
 
   defp put_op_queue(%__MODULE__{} = rete, op_queue) do

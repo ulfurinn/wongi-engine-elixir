@@ -1,5 +1,6 @@
 defmodule Wongi.Engine.WME do
   @moduledoc false
+  alias Wongi.Engine.DSL.Var
   defstruct [:subject, :predicate, :object]
 
   def new(subject, predicate, object) do
@@ -10,12 +11,28 @@ defmodule Wongi.Engine.WME do
     }
   end
 
-  def new([subject, predicate, object]) do
+  def new([s, p, o]) do
     %__MODULE__{
-      subject: subject,
-      predicate: predicate,
-      object: object
+      subject: s,
+      predicate: p,
+      object: o
     }
+  end
+
+  def template(s, p, o) do
+    new(
+      if(dynamic?(s), do: :_, else: s),
+      if(dynamic?(p), do: :_, else: p),
+      if(dynamic?(o), do: :_, else: o)
+    )
+  end
+
+  def template([s, p, o]) do
+    new(
+      if(dynamic?(s), do: :_, else: s),
+      if(dynamic?(p), do: :_, else: p),
+      if(dynamic?(o), do: :_, else: o)
+    )
   end
 
   defguard wild?(x) when x == :_
@@ -31,6 +48,10 @@ defmodule Wongi.Engine.WME do
                   wild?(:erlang.map_get(:subject, wme)) and
                   wild?(:erlang.map_get(:predicate, wme)) and
                   wild?(:erlang.map_get(:object, wme))
+
+  def dynamic?(%Var{}), do: true
+  def dynamic?(:_), do: true
+  def dynamic?(_), do: false
 
   def index_pattern(template) do
     [:object, :predicate, :subject]

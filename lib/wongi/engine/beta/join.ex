@@ -67,6 +67,7 @@ defmodule Wongi.Engine.Beta.Join do
   end
 
   defimpl Beta do
+    alias Wongi.Engine.Beta.Common
     alias Wongi.Engine.Rete
     require Logger
 
@@ -105,18 +106,13 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def alpha_deactivate(%@for{} = join, wme, rete) do
-      Rete.beta_subscriptions(rete, join)
-      |> Enum.reduce(rete, fn beta, rete ->
-        Rete.tokens(rete, beta)
-        |> Enum.filter(&Token.has_wme?(&1, wme))
-        |> Enum.reduce(rete, fn token, rete ->
-          Beta.beta_deactivate(beta, token, rete)
-        end)
-      end)
+      rete
+      |> Rete.beta_subscriptions(join)
+      |> Common.beta_deactivate(wme, rete)
     end
 
     def beta_activate(%@for{} = join, token, rete) do
-      Logger.debug("beta activate #{inspect(join)} with #{inspect(token)}")
+      # Logger.debug("beta activate #{inspect(join)} with #{inspect(token)}")
       # return early if already has a duplicate token?
       # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
@@ -127,33 +123,20 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def beta_deactivate(join, token, rete) do
-      rete = Rete.remove_token(rete, token)
-
-      Rete.beta_subscriptions(rete, join)
-      |> Enum.reduce(rete, fn beta, rete ->
-        Rete.tokens(rete, beta)
-        |> Enum.filter(&Token.child_of?(&1, token))
-        |> Enum.reduce(rete, fn token, rete ->
-          Beta.beta_deactivate(beta, token, rete)
-        end)
-      end)
+      rete
+      |> Rete.remove_token(token)
+      |> Rete.beta_subscriptions(join)
+      |> Common.beta_deactivate(token, rete)
     end
 
     defp propagate_matching(join, token, wme, betas, rete) do
       case @for.match(join, token, wme) do
         {:ok, assignments} ->
-          betas
-          |> activate_children(token, wme, assignments, rete)
+          Common.beta_activate(betas, &Token.new(&1, [token], wme, assignments), rete)
 
         _ ->
           rete
       end
-    end
-
-    defp activate_children(betas, token, wme, assignments, rete) do
-      Enum.reduce(betas, rete, fn beta, rete ->
-        Beta.beta_activate(beta, Token.new(beta, [token], wme, assignments), rete)
-      end)
     end
   end
 end
