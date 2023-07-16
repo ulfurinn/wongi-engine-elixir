@@ -5,6 +5,7 @@
 /cover
 /deps
 /doc
+/priv/plts
 /tmp
 *.beam
 *.ez
