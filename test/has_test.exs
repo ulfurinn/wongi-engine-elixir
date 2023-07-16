@@ -9,7 +9,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, :c)
           ]
@@ -30,7 +30,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, :c)
           ]
@@ -52,7 +52,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, var(:x), var(:x))
           ]
@@ -76,7 +76,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, any())
           ]
@@ -97,7 +97,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, var(:x))
           ]
@@ -120,7 +120,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, var(:x)),
             has(var(:x), :d, :e)
@@ -145,7 +145,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, var(:x)),
             has(var(:x), :d, :e)
@@ -170,7 +170,7 @@ defmodule Wongi.HasTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:a, :b, var(:x)),
             has(var(:x), :d, :e)

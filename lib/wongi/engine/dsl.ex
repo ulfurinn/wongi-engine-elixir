@@ -7,7 +7,7 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.Var
 
-  def rule(name, opts) do
+  def rule(name \\ nil, opts) do
     Rule.new(name, opts[:forall], opts[:do])
   end
 

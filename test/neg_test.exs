@@ -9,7 +9,7 @@ defmodule Wongi.NegTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             neg(:a, :b, :c)
           ]
@@ -29,7 +29,7 @@ defmodule Wongi.NegTest do
     {ref, rete} =
       Engine.new()
       |> Engine.compile_and_get_ref(
-        rule(nil,
+        rule(
           forall: [
             has(:x, :y, :z),
             neg(:a, :b, :c)

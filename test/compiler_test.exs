@@ -6,7 +6,7 @@ defmodule Wongi.CompilerTest do
 
   test "collapses identical join nodes" do
     rule =
-      rule(:test,
+      rule(
         forall: [
           has(:a, :b, var(:x)),
           has(var(:x), :d, :e)
@@ -29,7 +29,7 @@ defmodule Wongi.CompilerTest do
 
   test "collapses identical neg nodes" do
     rule =
-      rule(:test,
+      rule(
         forall: [
           neg(:a, :b, :c),
           neg(:c, :d, :e)
