@@ -21,7 +21,11 @@ defmodule Wongi.Engine.AlphaIndex do
 
     case Map.fetch(entries, key) do
       {:ok, collection} ->
-        entries = Map.put(entries, key, MapSet.delete(collection, wme))
+        entries =
+          entries
+          |> Map.put(key, MapSet.delete(collection, wme))
+          |> delete_if(key, &Enum.empty?/1)
+
         %__MODULE__{index | entries: entries}
 
       :error ->
@@ -31,5 +35,13 @@ defmodule Wongi.Engine.AlphaIndex do
 
   def get(%__MODULE__{entries: entries}, key) do
     Map.get(entries, key, MapSet.new())
+  end
+
+  defp delete_if(%{} = map, key, predicate) do
+    if predicate.(Map.get(map, key)) do
+      Map.delete(map, key)
+    else
+      map
+    end
   end
 end
