@@ -13,7 +13,7 @@ defmodule Wongi.Engine do
   defdelegate assert(rete, fact), to: Rete
   defdelegate assert(rete, subject, predicate, object), to: Rete
   defdelegate retract(rete, fact), to: Rete
-  defdelegate retract(rete, subject, object, predicate, fact), to: Rete
+  defdelegate retract(rete, subject, object, predicate), to: Rete
   defdelegate find(rete, template), to: Rete
   defdelegate tokens(rete, node), to: Rete
 end
