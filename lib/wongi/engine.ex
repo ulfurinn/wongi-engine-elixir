@@ -11,7 +11,9 @@ defmodule Wongi.Engine do
   defdelegate compile(rete, rule), to: Rete
   defdelegate compile_and_get_ref(rete, rule), to: Rete
   defdelegate assert(rete, fact), to: Rete
+  defdelegate assert(rete, subject, predicate, object), to: Rete
   defdelegate retract(rete, fact), to: Rete
+  defdelegate retract(rete, subject, object, predicate, fact), to: Rete
   defdelegate find(rete, template), to: Rete
   defdelegate tokens(rete, node), to: Rete
 end

@@ -16,9 +16,11 @@ defmodule Wongi.Engine.DSL.Neg do
     alias Wongi.Engine.WME
 
     def compile(%{subject: s, predicate: p, object: o} = clause, context) do
+      acc = {context, %{}, %{}, MapSet.new()}
+
       {context, tests, assignments, _} =
         [:subject, :predicate, :object]
-        |> Enum.reduce({context, %{}, %{}, MapSet.new()}, fn field, {context, tests, assignments, local_vars} = acc ->
+        |> Enum.reduce(acc, fn field, {context, tests, assignments, local_vars} = acc ->
           case Map.get(clause, field) do
             %Var{name: var} ->
               if MapSet.member?(context.variables, var) || MapSet.member?(local_vars, var) do

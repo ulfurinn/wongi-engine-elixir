@@ -75,10 +75,14 @@ defmodule Wongi.NegTest do
   test "unifies variables" do
     {ref, rete} =
       Engine.new()
-      |> Engine.compile_and_get_ref(rule(forall: [
-        has(:a, :b, var(:x)),
-        neg(var(:x), var(:y), var(:y))
-      ]))
+      |> Engine.compile_and_get_ref(
+        rule(
+          forall: [
+            has(:a, :b, var(:x)),
+            neg(var(:x), var(:y), var(:y))
+          ]
+        )
+      )
 
     rete = rete |> Engine.assert([:a, :b, :c])
     assert [_] = rete |> Engine.tokens(ref) |> MapSet.to_list()

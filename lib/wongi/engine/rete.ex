@@ -63,6 +63,11 @@ defmodule Wongi.Engine.Rete do
   def assert(rete, [s, p, o], generator),
     do: assert(rete, WME.new(s, p, o), generator)
 
+  def assert(rete, subject, object, predicate, generator \\ nil)
+
+  def assert(rete, s, p, o, generator),
+    do: assert(rete, WME.new(s, p, o), generator)
+
   def retract(rete, wme_ish, generator \\ nil)
 
   def retract(rete, %WME{} = wme, generator) do
@@ -71,6 +76,11 @@ defmodule Wongi.Engine.Rete do
   end
 
   def retract(rete, [s, p, o], generator),
+    do: retract(rete, WME.new(s, p, o), generator)
+
+  def retract(rete, subject, object, predicate, generator \\ nil)
+
+  def retract(rete, s, p, o, generator),
     do: retract(rete, WME.new(s, p, o), generator)
 
   def find(%__MODULE__{overlay: overlay}, %WME{} = wme) when not template?(wme) do

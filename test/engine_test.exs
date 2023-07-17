@@ -22,6 +22,17 @@ defmodule Wongi.EngineTest do
     end
   end
 
+  describe "assert/4" do
+    test "adds the WME to storage", %{rete: rete} do
+      rete =
+        rete
+        |> Engine.assert(:a, :b, :c)
+
+      wme = WME.new(:a, :b, :c)
+      assert %{overlay: %{wmes: %{map: %{^wme => _}}}} = rete
+    end
+  end
+
   describe "retract/2" do
     test "removes the WME from storage", %{rete: rete} do
       wme = WME.new(:a, :b, :c)
