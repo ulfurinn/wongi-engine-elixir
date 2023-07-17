@@ -2,38 +2,58 @@
 defmodule Wongi.Engine.Beta.Negative do
   @moduledoc false
   alias Wongi.Engine.Token
+  alias Wongi.Engine.WME
 
   @derive Inspect
-  defstruct [:ref, :parent_ref, :template, :tests]
+  defstruct [:ref, :parent_ref, :template, :tests, :assignments]
 
-  def new(parent_ref, template, tests) do
+  def new(parent_ref, template, tests, assignments) do
     %__MODULE__{
       ref: make_ref(),
       parent_ref: parent_ref,
       template: template,
-      tests: tests
+      tests: tests,
+      assignments: assignments
     }
   end
 
-  def match(%__MODULE__{tests: tests}, token, wme) do
+  def match(%__MODULE__{tests: tests, assignments: assignments}, token, wme) do
     [:subject, :predicate, :object]
-    |> Enum.reduce_while(true, fn field, true ->
+    |> Enum.reduce_while({:ok, assignments}, fn field, {:ok, new_assignments} ->
       case Map.fetch(tests, field) do
         {:ok, var} ->
           value = wme[field]
 
-          case Token.fetch(token, var) do
+          case Token.fetch(token, var, new_assignments) do
             {:ok, ^value} ->
-              {:cont, true}
+              {:cont, {:ok, assign(new_assignments, field, value, assignments)}}
 
             _ ->
-              {:halt, false}
+              {:halt, :error}
           end
 
         :error ->
-          {:cont, true}
+          {:cont, {:ok, assign(new_assignments, field, wme, assignments)}}
       end
     end)
+    |> case do
+      {:ok, _} -> true
+      :error -> false
+    end
+  end
+
+  defp assign(acc, field, %WME{} = wme, assignment_decls) do
+    assign(acc, field, wme[field], assignment_decls)
+  end
+
+  defp assign(acc, field, value, assignment_decls) do
+    case Map.fetch(assignment_decls, field) do
+      {:ok, var} ->
+        Map.put(acc, var, value)
+
+      :error ->
+        acc
+    end
   end
 
   def specialize(%__MODULE__{template: template, tests: tests}, token) do

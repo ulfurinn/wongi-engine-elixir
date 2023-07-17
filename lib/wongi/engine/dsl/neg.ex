@@ -16,15 +16,15 @@ defmodule Wongi.Engine.DSL.Neg do
     alias Wongi.Engine.WME
 
     def compile(%{subject: s, predicate: p, object: o} = clause, context) do
-      {context, tests} =
+      {context, tests, assignments, _} =
         [:subject, :predicate, :object]
-        |> Enum.reduce({context, %{}}, fn field, {context, tests} = acc ->
+        |> Enum.reduce({context, %{}, %{}, MapSet.new()}, fn field, {context, tests, assignments, local_vars} = acc ->
           case Map.get(clause, field) do
             %Var{name: var} ->
-              if MapSet.member?(context.variables, var) do
-                {context, Map.put(tests, field, var)}
+              if MapSet.member?(context.variables, var) || MapSet.member?(local_vars, var) do
+                {context, Map.put(tests, field, var), assignments, local_vars}
               else
-                raise "unbound varaible #{var} in neg clause; neg nodes may not introduce new variables"
+                {context, tests, Map.put(assignments, field, var), MapSet.put(local_vars, var)}
               end
 
             _ ->
@@ -34,7 +34,7 @@ defmodule Wongi.Engine.DSL.Neg do
 
       template = WME.template(s, p, o)
 
-      node = Negative.new(context.node_ref, template, tests)
+      node = Negative.new(context.node_ref, template, tests, assignments)
 
       case find_existing(context, node) do
         nil ->
