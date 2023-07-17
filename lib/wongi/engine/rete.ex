@@ -221,7 +221,6 @@ defmodule Wongi.Engine.Rete do
     |> put_overlay(Overlay.remove_wme(overlay, wme, generator))
   end
 
-  @spec activate(t(), WME.t(), boolean()) :: t()
   defp activate(rete, wme, existing)
   defp activate(rete, _, true), do: rete
 
@@ -233,7 +232,6 @@ defmodule Wongi.Engine.Rete do
     subscriptions |> Enum.reduce(rete, &Beta.alpha_activate(&1, wme, &2))
   end
 
-  @spec deactivate(t(), WME.t(), boolean()) :: t()
   defp deactivate(rete, wme, existing)
 
   defp deactivate(rete, _, false), do: rete
