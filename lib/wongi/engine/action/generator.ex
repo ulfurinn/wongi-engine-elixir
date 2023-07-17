@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Action.Generator do
+  @moduledoc false
   alias Wongi.Engine.WME
   defstruct [:template]
 
