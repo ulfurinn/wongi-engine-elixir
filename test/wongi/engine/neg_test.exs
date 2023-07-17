@@ -1,4 +1,4 @@
-defmodule Wongi.NegTest do
+defmodule Wongi.Engine.NegTest do
   use ExUnit.Case
 
   import Wongi.Engine.DSL

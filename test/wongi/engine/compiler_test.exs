@@ -1,4 +1,4 @@
-defmodule Wongi.CompilerTest do
+defmodule Wongi.Engine.CompilerTest do
   use ExUnit.Case
 
   import Wongi.Engine.DSL

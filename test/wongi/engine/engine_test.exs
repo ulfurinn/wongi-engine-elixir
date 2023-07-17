@@ -1,4 +1,4 @@
-defmodule Wongi.EngineTest do
+defmodule Wongi.Engine.EngineTest do
   use ExUnit.Case
 
   import Wongi.Engine, only: [new: 0, find: 2]

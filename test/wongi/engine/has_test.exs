@@ -1,4 +1,4 @@
-defmodule Wongi.HasTest do
+defmodule Wongi.Engine.HasTest do
   use ExUnit.Case
 
   import Wongi.Engine.DSL
