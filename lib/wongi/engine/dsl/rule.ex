@@ -1,13 +1,13 @@
 defmodule Wongi.Engine.DSL.Rule do
   @moduledoc false
-  defstruct [:ref, :name, :forall, :do]
+  defstruct [:ref, :name, :forall, :actions]
 
-  def new(name, forall, do_) do
+  def new(name, forall, actions) do
     %__MODULE__{
       ref: make_ref(),
       name: name,
       forall: forall,
-      do: do_
+      actions: actions
     }
   end
 end

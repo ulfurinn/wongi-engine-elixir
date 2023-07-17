@@ -8,7 +8,11 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.DSL.Var
 
   def rule(name \\ nil, opts) do
-    Rule.new(name, opts[:forall], opts[:do])
+    Rule.new(
+      name,
+      Keyword.get(opts, :forall, []),
+      Keyword.get(opts, :do, [])
+    )
   end
 
   def has(s, p, o), do: Has.new(s, p, o)

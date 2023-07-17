@@ -17,7 +17,7 @@ defmodule Wongi.Engine.Compiler do
 
     context =
       Enum.reduce(rule.forall, context, &Clause.compile/2)
-      |> production(rule.ref)
+      |> production(rule.ref, rule.actions)
 
     context.rete
   end
@@ -55,8 +55,8 @@ defmodule Wongi.Engine.Compiler do
     %__MODULE__{context | node_ref: Beta.ref(node)}
   end
 
-  defp production(context, ref) do
-    node = Production.new(ref, context.node_ref)
+  defp production(context, ref, actions) do
+    node = Production.new(ref, context.node_ref, actions)
 
     case find_existing(context, node) do
       nil ->
