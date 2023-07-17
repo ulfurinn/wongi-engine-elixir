@@ -3,11 +3,12 @@ defmodule Wongi.Engine.Token do
   @moduledoc false
   alias Wongi.Engine.Beta
 
-  @derive {Inspect, except: [:node_ref]}
-  defstruct [:node_ref, :parents, :wme, :assignments]
+  @derive Inspect
+  defstruct [:ref, :node_ref, :parents, :wme, :assignments]
 
   def new(node, parents, wme, assignments \\ %{}) do
     %__MODULE__{
+      ref: make_ref(),
       node_ref: Beta.ref(node),
       parents: MapSet.new(parents),
       wme: wme,

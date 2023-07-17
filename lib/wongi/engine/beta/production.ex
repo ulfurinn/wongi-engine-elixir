@@ -39,8 +39,12 @@ defmodule Wongi.Engine.Beta.Production do
       end)
     end
 
-    def beta_deactivate(_, token, rete) do
-      Rete.remove_token(rete, token)
+    def beta_deactivate(%@for{actions: actions}, token, rete) do
+      rete = Rete.remove_token(rete, token)
+
+      Enum.reduce(actions, rete, fn action, rete ->
+        Action.deexecute(action, token, rete)
+      end)
     end
   end
 end

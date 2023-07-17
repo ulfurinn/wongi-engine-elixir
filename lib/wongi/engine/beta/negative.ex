@@ -19,7 +19,7 @@ defmodule Wongi.Engine.Beta.Negative do
 
   def match(%__MODULE__{tests: tests, assignments: assignments}, token, wme) do
     [:subject, :predicate, :object]
-    |> Enum.reduce_while({:ok, assignments}, fn field, {:ok, new_assignments} ->
+    |> Enum.reduce_while({:ok, %{}}, fn field, {:ok, new_assignments} ->
       case Map.fetch(tests, field) do
         {:ok, var} ->
           value = wme[field]
@@ -144,6 +144,8 @@ defmodule Wongi.Engine.Beta.Negative do
     end
 
     def beta_activate(neg, token, rete) do
+      # return early if already has a duplicate token?
+      # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
       wmes = Rete.find(rete, @for.specialize(neg, token))
 
@@ -169,8 +171,8 @@ defmodule Wongi.Engine.Beta.Negative do
 
     def beta_deactivate(neg, token, rete) do
       rete =
-      rete
-      |> Rete.remove_token(token)
+        rete
+        |> Rete.remove_token(token)
 
       rete
       |> Rete.beta_subscriptions(neg)

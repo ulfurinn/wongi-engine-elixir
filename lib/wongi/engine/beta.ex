@@ -72,7 +72,8 @@ defmodule Wongi.Engine.Beta.Common do
 
   def beta_deactivate(betas, %Token{} = token, rete) do
     Enum.reduce(betas, rete, fn beta, rete ->
-      Rete.tokens(rete, beta)
+      rete
+      |> Rete.tokens(beta)
       |> Enum.filter(&Token.child_of?(&1, token))
       |> Enum.reduce(rete, fn token, rete ->
         Beta.beta_deactivate(beta, token, rete)
@@ -82,7 +83,8 @@ defmodule Wongi.Engine.Beta.Common do
 
   def beta_deactivate(betas, %WME{} = wme, rete) do
     Enum.reduce(betas, rete, fn beta, rete ->
-      Rete.tokens(rete, beta)
+      rete
+      |> Rete.tokens(beta)
       |> Enum.filter(&Token.has_wme?(&1, wme))
       |> Enum.reduce(rete, fn token, rete ->
         Beta.beta_deactivate(beta, token, rete)

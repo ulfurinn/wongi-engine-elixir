@@ -21,6 +21,8 @@ defmodule Wongi.Engine.Rete do
     [:subject, :predicate, :object]
   ]
 
+  @type t() :: %__MODULE__{}
+
   @derive {Inspect, except: [:op_queue]}
   defstruct [
     :overlay,
@@ -28,7 +30,8 @@ defmodule Wongi.Engine.Rete do
     :beta_root,
     :beta_table,
     :beta_subscriptions,
-    :op_queue
+    :op_queue,
+    :processing
   ]
 
   def new do
@@ -40,7 +43,8 @@ defmodule Wongi.Engine.Rete do
       beta_root: root,
       beta_table: %{Beta.ref(root) => root},
       beta_subscriptions: %{},
-      op_queue: :queue.new()
+      op_queue: :queue.new(),
+      processing: false
     }
     |> seed()
   end
@@ -94,13 +98,11 @@ defmodule Wongi.Engine.Rete do
   def find(%__MODULE__{overlay: overlay}, %WME{} = wme) when root?(wme) do
     overlay
     |> Overlay.wmes()
-    |> MapSet.to_list()
   end
 
   def find(%__MODULE__{overlay: overlay}, %WME{} = wme) do
     overlay
     |> Overlay.matching(wme)
-    |> MapSet.to_list()
   end
 
   def find(rete, [s, p, o]),
@@ -158,14 +160,16 @@ defmodule Wongi.Engine.Rete do
     Root.seed(beta_root, rete)
   end
 
-  def trigger(%__MODULE__{op_queue: op_queue} = rete, operation) do
-    if :queue.is_empty(op_queue) do
+  def trigger(%__MODULE__{op_queue: op_queue, processing: processing} = rete, operation) do
+    rete =
       rete
       |> put_op_queue(:queue.in(operation, op_queue))
-      |> run_op_queue()
+
+    if processing do
+      rete
     else
       rete
-      |> put_op_queue(:queue.in(operation, op_queue))
+      |> run_op_queue()
     end
   end
 
@@ -174,7 +178,9 @@ defmodule Wongi.Engine.Rete do
       {{:value, operation}, op_queue} ->
         rete
         |> put_op_queue(op_queue)
+        |> put_processing(true)
         |> handle_operation(operation)
+        |> put_processing(false)
         |> run_op_queue()
 
       {:empty, op_queue} ->
@@ -215,6 +221,7 @@ defmodule Wongi.Engine.Rete do
     |> put_overlay(Overlay.remove_wme(overlay, wme, generator))
   end
 
+  @spec activate(t(), WME.t(), boolean()) :: t()
   defp activate(rete, wme, existing)
   defp activate(rete, _, true), do: rete
 
@@ -226,6 +233,7 @@ defmodule Wongi.Engine.Rete do
     subscriptions |> Enum.reduce(rete, &Beta.alpha_activate(&1, wme, &2))
   end
 
+  @spec deactivate(t(), WME.t(), boolean()) :: t()
   defp deactivate(rete, wme, existing)
 
   defp deactivate(rete, _, false), do: rete
@@ -261,8 +269,14 @@ defmodule Wongi.Engine.Rete do
   end
 
   def remove_token(%__MODULE__{overlay: overlay} = rete, token) do
-    rete
-    |> put_overlay(Overlay.remove_token(overlay, token))
+    wmes = Overlay.generated_wmes(overlay, token)
+
+    rete =
+      rete
+      |> put_overlay(Overlay.remove_token(overlay, token))
+
+    wmes
+    |> Enum.reduce(rete, &retract(&2, &1, token))
   end
 
   def tokens(%__MODULE__{overlay: overlay}, node) do
@@ -285,6 +299,10 @@ defmodule Wongi.Engine.Rete do
 
   defp put_op_queue(%__MODULE__{} = rete, op_queue) do
     %__MODULE__{rete | op_queue: op_queue}
+  end
+
+  defp put_processing(%__MODULE__{} = rete, processing) do
+    %__MODULE__{rete | processing: processing}
   end
 
   defp put_overlay(%__MODULE__{} = rete, overlay) do

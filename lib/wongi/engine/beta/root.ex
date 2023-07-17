@@ -1,6 +1,5 @@
 defmodule Wongi.Engine.Beta.Root do
   @moduledoc false
-  alias Wongi.Engine.Rete
   alias Wongi.Engine.Token
   defstruct [:ref]
 
@@ -10,15 +9,14 @@ defmodule Wongi.Engine.Beta.Root do
     }
   end
 
-  def seed(beta, rete) do
-    token = Token.new(beta, [], nil)
-
+  def seed(_beta, rete) do
     rete
-    |> Rete.add_token(token)
   end
 
   defimpl Wongi.Engine.Beta do
     alias Wongi.Engine.Beta
+
+    require Logger
 
     def ref(%@for{ref: ref}) do
       ref
@@ -27,10 +25,8 @@ defmodule Wongi.Engine.Beta.Root do
     def parent_ref(_), do: nil
 
     def seed(%@for{} = root, beta, rete) do
-      Rete.tokens(rete, root)
-      |> Enum.reduce(rete, fn token, rete ->
-        Beta.beta_activate(beta, Token.new(beta, [token], nil), rete)
-      end)
+      Logger.debug("seed #{inspect(root)} into #{inspect(beta)}")
+      Beta.beta_activate(beta, Token.new(beta, [], nil), rete)
     end
 
     def equivalent?(

@@ -20,7 +20,7 @@ defmodule Wongi.Engine.Beta.Join do
 
   def match(%__MODULE__{tests: tests, assignments: assignments}, token, wme) do
     [:subject, :predicate, :object]
-    |> Enum.reduce_while({:ok, assignments}, fn field, {:ok, new_assignments} ->
+    |> Enum.reduce_while({:ok, %{}}, fn field, {:ok, new_assignments} ->
       case Map.fetch(tests, field) do
         {:ok, var} ->
           value = wme[field]
@@ -98,8 +98,6 @@ defmodule Wongi.Engine.Beta.Join do
     def equivalent?(_, _, _), do: false
 
     def alpha_activate(join, wme, rete) do
-      Logger.debug("alpha activate #{inspect(join)} with #{inspect(wme)}")
-
       betas = Rete.beta_subscriptions(rete, join)
       tokens = Rete.tokens(rete, join)
       Enum.reduce(tokens, rete, &propagate_matching(join, &1, wme, betas, &2))
@@ -112,7 +110,6 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def beta_activate(%@for{} = join, token, rete) do
-      # Logger.debug("beta activate #{inspect(join)} with #{inspect(token)}")
       # return early if already has a duplicate token?
       # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
@@ -124,8 +121,8 @@ defmodule Wongi.Engine.Beta.Join do
 
     def beta_deactivate(join, token, rete) do
       rete =
-      rete
-      |> Rete.remove_token(token)
+        rete
+        |> Rete.remove_token(token)
 
       rete
       |> Rete.beta_subscriptions(join)

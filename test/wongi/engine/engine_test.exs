@@ -70,12 +70,19 @@ defmodule Wongi.Engine.EngineTest do
         |> Engine.assert([:a, :b, :c])
         |> Engine.assert([:a, :b, :d])
 
-      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] == find(rete, [:a, :_, :_])
-      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] == find(rete, [:_, :b, :_])
-      assert [WME.new(:a, :b, :c)] == find(rete, [:_, :_, :c])
-      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] == find(rete, [:a, :b, :_])
-      assert [WME.new(:a, :b, :c)] == find(rete, [:a, :_, :c])
-      assert [WME.new(:a, :b, :c)] == find(rete, [:_, :b, :c])
+      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
+               find(rete, [:a, :_, :_]) |> MapSet.to_list()
+
+      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
+               find(rete, [:_, :b, :_]) |> MapSet.to_list()
+
+      assert [WME.new(:a, :b, :c)] == find(rete, [:_, :_, :c]) |> MapSet.to_list()
+
+      assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
+               find(rete, [:a, :b, :_]) |> MapSet.to_list()
+
+      assert [WME.new(:a, :b, :c)] == find(rete, [:a, :_, :c]) |> MapSet.to_list()
+      assert [WME.new(:a, :b, :c)] == find(rete, [:_, :b, :c]) |> MapSet.to_list()
     end
 
     test "does not retrieve by template after retracting", %{rete: rete} do
@@ -86,12 +93,12 @@ defmodule Wongi.Engine.EngineTest do
         |> Engine.retract([:a, :b, :c])
         |> Engine.retract([:a, :b, :d])
 
-      assert [] == find(rete, [:a, :_, :_])
-      assert [] == find(rete, [:_, :b, :_])
-      assert [] == find(rete, [:_, :_, :c])
-      assert [] == find(rete, [:a, :b, :_])
-      assert [] == find(rete, [:a, :_, :c])
-      assert [] == find(rete, [:_, :b, :c])
+      assert [] == find(rete, [:a, :_, :_]) |> MapSet.to_list()
+      assert [] == find(rete, [:_, :b, :_]) |> MapSet.to_list()
+      assert [] == find(rete, [:_, :_, :c]) |> MapSet.to_list()
+      assert [] == find(rete, [:a, :b, :_]) |> MapSet.to_list()
+      assert [] == find(rete, [:a, :_, :c]) |> MapSet.to_list()
+      assert [] == find(rete, [:_, :b, :c]) |> MapSet.to_list()
     end
   end
 end
