@@ -168,8 +168,11 @@ defmodule Wongi.Engine.Beta.Negative do
     end
 
     def beta_deactivate(neg, token, rete) do
+      rete =
       rete
       |> Rete.remove_token(token)
+
+      rete
       |> Rete.beta_subscriptions(neg)
       |> Common.beta_deactivate(token, rete)
     end

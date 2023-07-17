@@ -123,8 +123,11 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def beta_deactivate(join, token, rete) do
+      rete =
       rete
       |> Rete.remove_token(token)
+
+      rete
       |> Rete.beta_subscriptions(join)
       |> Common.beta_deactivate(token, rete)
     end
