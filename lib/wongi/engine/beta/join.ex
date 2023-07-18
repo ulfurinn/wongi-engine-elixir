@@ -99,7 +99,12 @@ defmodule Wongi.Engine.Beta.Join do
 
     def alpha_activate(join, wme, rete) do
       betas = Rete.beta_subscriptions(rete, join)
-      tokens = Rete.tokens(rete, join)
+
+      tokens =
+        rete
+        |> Rete.tokens(join)
+        |> Enum.reject(&Token.ancestral_wme?(&1, wme))
+
       Enum.reduce(tokens, rete, &propagate_matching(join, &1, wme, betas, &2))
     end
 

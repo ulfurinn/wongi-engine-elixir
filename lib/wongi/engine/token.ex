@@ -48,6 +48,10 @@ defmodule Wongi.Engine.Token do
   def has_wme?(%__MODULE__{wme: wme}, wme), do: true
   def has_wme?(_, _), do: false
 
+  def ancestral_wme?(%__MODULE__{wme: token_wme, parents: parents}, wme) do
+    token_wme == wme || Enum.any?(parents, &ancestral_wme?(&1, wme))
+  end
+
   def child_of?(%__MODULE__{parents: parents}, parent),
     do: MapSet.member?(parents, parent)
 end

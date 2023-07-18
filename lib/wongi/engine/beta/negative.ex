@@ -108,7 +108,10 @@ defmodule Wongi.Engine.Beta.Negative do
       do: alpha_activate(neg, wme, rete, betas: Rete.beta_subscriptions(rete, neg))
 
     defp alpha_activate(neg, wme, rete, betas: betas) do
-      tokens = Rete.tokens(rete, neg)
+      tokens =
+        rete
+        |> Rete.tokens(neg)
+        |> Enum.reject(&Token.ancestral_wme?(&1, wme))
 
       Enum.reduce(tokens, rete, fn token, rete ->
         if @for.match(neg, token, wme) do

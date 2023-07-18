@@ -1,9 +1,5 @@
 defmodule Wongi.Engine.GenerateTest do
-  use ExUnit.Case
-
-  import Wongi.Engine.DSL
-
-  alias Wongi.Engine
+  use Wongi.TestCase
 
   @transitive [
     forall: [
@@ -81,5 +77,24 @@ defmodule Wongi.Engine.GenerateTest do
 
     # make sure there are no internal resource leaks
     assert clean_rete.overlay == rete_with_all_removed.overlay
+  end
+
+  test "tokens do not get duplicated" do
+    {ref, rete} =
+      Engine.new()
+      |> Engine.compile_and_get_ref(
+        rule(
+          forall: [
+            has(any(), :b, var(:z)),
+            has(var(:x), :b, var(:z))
+          ]
+        )
+      )
+
+    rete =
+      rete
+      |> assert(:a, :b, :c)
+
+    assert [_token] = Engine.tokens(rete, ref) |> Enum.to_list()
   end
 end
