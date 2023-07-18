@@ -1,14 +1,10 @@
 defmodule Wongi.Engine.HasTest do
-  use ExUnit.Case
-
-  import Wongi.Engine.DSL
-
-  alias Wongi.Engine
+  use Wongi.TestCase
 
   test "matches constant facts" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, :c)
@@ -18,18 +14,18 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :c])
+      |> assert(:a, :b, :c)
 
     assert [_token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
   end
 
   test "deactivates on retraction" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, :c)
@@ -39,19 +35,19 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :c])
-      |> Engine.retract([:a, :b, :c])
+      |> assert(:a, :b, :c)
+      |> retract(:a, :b, :c)
 
     assert [] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
   end
 
   test "unifies variables" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, var(:x), var(:x))
@@ -61,12 +57,12 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :b])
-      |> Engine.assert([:a, :b, :c])
+      |> assert(:a, :b, :b)
+      |> assert(:a, :b, :c)
 
     assert [token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
 
     assert :b = token[:x]
@@ -74,8 +70,8 @@ defmodule Wongi.Engine.HasTest do
 
   test "matches with wildcards" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, any())
@@ -85,18 +81,18 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :c])
+      |> assert(:a, :b, :c)
 
     assert [_token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
   end
 
   test "matches with new variables" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x))
@@ -106,11 +102,11 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :c])
+      |> assert(:a, :b, :c)
 
     assert [token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
 
     assert :c = token[:x]
@@ -118,8 +114,8 @@ defmodule Wongi.Engine.HasTest do
 
   test "matches with bound variables" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x)),
@@ -130,12 +126,12 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, :c])
-      |> Engine.assert([:c, :d, :e])
+      |> assert(:a, :b, :c)
+      |> assert(:c, :d, :e)
 
     assert [token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
 
     assert :c = token[:x]
@@ -143,8 +139,8 @@ defmodule Wongi.Engine.HasTest do
 
   test "matches with bound variables when asserted from bottom up" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x)),
@@ -155,12 +151,12 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:c, :d, :e])
-      |> Engine.assert([:a, :b, :c])
+      |> assert(:c, :d, :e)
+      |> assert(:a, :b, :c)
 
     assert [token] =
              rete
-             |> Engine.tokens(ref)
+             |> tokens(ref)
              |> MapSet.to_list()
 
     assert :c = token[:x]
@@ -168,8 +164,8 @@ defmodule Wongi.Engine.HasTest do
 
   test "deactivates when a precondition is retracted" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x)),
@@ -180,13 +176,13 @@ defmodule Wongi.Engine.HasTest do
 
     rete =
       rete
-      |> Engine.assert([:c, :d, :e])
-      |> Engine.assert([:a, :b, :c])
-      |> Engine.retract([:a, :b, :c])
+      |> assert(:c, :d, :e)
+      |> assert(:a, :b, :c)
+      |> retract(:a, :b, :c)
 
     assert [] =
              rete
-             |> Engine.tokens(ref)
-             |> MapSet.to_list()
+             |> tokens(ref)
+             |> Enum.to_list()
   end
 end

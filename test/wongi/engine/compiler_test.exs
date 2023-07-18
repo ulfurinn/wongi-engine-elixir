@@ -1,8 +1,5 @@
 defmodule Wongi.Engine.CompilerTest do
-  use ExUnit.Case
-
-  import Wongi.Engine.DSL
-  import Wongi.Engine
+  use Wongi.TestCase
 
   test "collapses identical join nodes" do
     rule =

@@ -108,6 +108,9 @@ defmodule Wongi.Engine.Rete do
   def find(rete, [s, p, o]),
     do: find(rete, WME.new(s, p, o))
 
+  def find(rete, s, p, o),
+    do: find(rete, WME.new(s, p, o))
+
   def subscribe_to_alpha(
         %__MODULE__{alpha_subscriptions: alpha_subscriptions} = rete,
         %WME{} = template,

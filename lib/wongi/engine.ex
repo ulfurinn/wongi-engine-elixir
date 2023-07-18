@@ -15,5 +15,6 @@ defmodule Wongi.Engine do
   defdelegate retract(rete, fact), to: Rete
   defdelegate retract(rete, subject, object, predicate), to: Rete
   defdelegate find(rete, template), to: Rete
+  defdelegate find(rete, subject, predicate, object), to: Rete
   defdelegate tokens(rete, node), to: Rete
 end

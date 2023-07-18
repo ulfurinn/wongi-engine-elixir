@@ -14,66 +14,66 @@ defmodule Wongi.Engine.GenerateTest do
 
   test "generates and cleans up facts" do
     clean =
-      Engine.new()
-      |> Engine.compile(
+      new()
+      |> compile(
         rule(
           forall: [has(:a, :b, var(:x)), has(var(:x), :d, :e)],
           do: [gen(var(:x), :generated, true)]
         )
       )
 
-    asserted = clean |> Engine.assert(:a, :b, :c) |> Engine.assert(:c, :d, :e)
-    assert [_] = Engine.find(asserted, [:c, :d, :e])
+    asserted = clean |> assert(:a, :b, :c) |> assert(:c, :d, :e)
+    assert [_] = find(asserted, [:c, :d, :e])
 
     retracted =
       asserted
-      |> Engine.retract(:a, :b, :c)
-      |> Engine.retract(:c, :d, :e)
+      |> retract(:a, :b, :c)
+      |> retract(:c, :d, :e)
 
-    assert [] = Engine.find(retracted, [:c, :d, :e])
+    assert [] = find(retracted, [:c, :d, :e])
 
     assert clean.overlay == retracted.overlay
   end
 
   test "generates and cleans up transitive facts" do
     ruledef = @transitive
-    {ref, clean_rete} = Engine.new() |> Engine.compile_and_get_ref(rule(ruledef))
+    {ref, clean_rete} = new() |> compile_and_get_ref(rule(ruledef))
 
     rete_with_facts =
       clean_rete
-      |> Engine.assert(:relative, :transitive, true)
-      |> Engine.assert(:alice, :relative, :bob)
-      |> Engine.assert(:bob, :relative, :charlie)
+      |> assert(:relative, :transitive, true)
+      |> assert(:alice, :relative, :bob)
+      |> assert(:bob, :relative, :charlie)
 
-    assert [_] = Engine.find(rete_with_facts, [:alice, :relative, :charlie])
-    assert [_] = Engine.tokens(rete_with_facts, ref) |> Enum.to_list()
-
-    rete_with_one_fact_removed =
-      rete_with_facts
-      |> Engine.retract(:relative, :transitive, true)
-
-    assert [] = Engine.find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
-    assert [] = Engine.tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
+    assert [_] = find(rete_with_facts, [:alice, :relative, :charlie])
+    assert [_] = tokens(rete_with_facts, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
-      |> Engine.retract(:alice, :relative, :bob)
+      |> retract(:relative, :transitive, true)
 
-    assert [] = Engine.find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
-    assert [] = Engine.tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
+    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
-      |> Engine.retract(:bob, :relative, :charlie)
+      |> retract(:alice, :relative, :bob)
 
-    assert [] = Engine.find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
-    assert [] = Engine.tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
+    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
+
+    rete_with_one_fact_removed =
+      rete_with_facts
+      |> retract(:bob, :relative, :charlie)
+
+    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_all_removed =
       rete_with_facts
-      |> Engine.retract(:relative, :transitive, true)
-      |> Engine.retract(:alice, :relative, :bob)
-      |> Engine.retract(:bob, :relative, :charlie)
+      |> retract(:relative, :transitive, true)
+      |> retract(:alice, :relative, :bob)
+      |> retract(:bob, :relative, :charlie)
 
     # make sure there are no internal resource leaks
     assert clean_rete.overlay == rete_with_all_removed.overlay
@@ -81,8 +81,8 @@ defmodule Wongi.Engine.GenerateTest do
 
   test "tokens do not get duplicated" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(any(), :b, var(:z)),
@@ -95,6 +95,6 @@ defmodule Wongi.Engine.GenerateTest do
       rete
       |> assert(:a, :b, :c)
 
-    assert [_token] = Engine.tokens(rete, ref) |> Enum.to_list()
+    assert [_token] = tokens(rete, ref) |> Enum.to_list()
   end
 end

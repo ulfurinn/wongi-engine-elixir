@@ -1,5 +1,5 @@
 defmodule Wongi.Engine.WMETest do
-  use ExUnit.Case
+  use Wongi.TestCase
 
   import Wongi.Engine.WME
 

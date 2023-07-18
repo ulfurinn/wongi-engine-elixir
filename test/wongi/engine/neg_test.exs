@@ -1,14 +1,10 @@
 defmodule Wongi.Engine.NegTest do
-  use ExUnit.Case
-
-  import Wongi.Engine.DSL
-
-  alias Wongi.Engine
+  use Wongi.TestCase
 
   test "triggers on an empty rete" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             neg(:a, :b, :c)
@@ -16,19 +12,19 @@ defmodule Wongi.Engine.NegTest do
         )
       )
 
-    assert [_token] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    assert [_token] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.assert([:a, :b, :c])
-    assert [] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> assert(:a, :b, :c)
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.retract([:a, :b, :c])
-    assert [_token] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> retract([:a, :b, :c])
+    assert [_token] = rete |> tokens(ref) |> Enum.to_list()
   end
 
   test "deactivates on invalidated preconditions" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:x, :y, :z),
@@ -37,19 +33,19 @@ defmodule Wongi.Engine.NegTest do
         )
       )
 
-    assert [] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.assert([:x, :y, :z])
-    assert [_token] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> assert(:x, :y, :z)
+    assert [_token] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.retract([:x, :y, :z])
-    assert [] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> retract(:x, :y, :z)
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
   end
 
   test "tests against variables" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x)),
@@ -60,22 +56,22 @@ defmodule Wongi.Engine.NegTest do
 
     rete =
       rete
-      |> Engine.assert([:a, :b, 1])
-      |> Engine.assert([:x, :y, 1])
+      |> assert(:a, :b, 1)
+      |> assert(:x, :y, 1)
 
-    assert [] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
 
     rete =
       rete
-      |> Engine.retract([:x, :y, 1])
+      |> retract(:x, :y, 1)
 
-    assert [_] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    assert [_] = rete |> tokens(ref) |> Enum.to_list()
   end
 
   test "unifies variables" do
     {ref, rete} =
-      Engine.new()
-      |> Engine.compile_and_get_ref(
+      new()
+      |> compile_and_get_ref(
         rule(
           forall: [
             has(:a, :b, var(:x)),
@@ -84,13 +80,13 @@ defmodule Wongi.Engine.NegTest do
         )
       )
 
-    rete = rete |> Engine.assert([:a, :b, :c])
-    assert [_] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> assert(:a, :b, :c)
+    assert [_] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.assert([:c, :d, :e])
-    assert [_] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> assert(:c, :d, :e)
+    assert [_] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> Engine.assert([:c, :d, :d])
-    assert [] = rete |> Engine.tokens(ref) |> MapSet.to_list()
+    rete = rete |> assert(:c, :d, :d)
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
   end
 end
