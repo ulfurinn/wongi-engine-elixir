@@ -11,6 +11,11 @@ defmodule Wongi.Engine.MixProject do
       deps: deps(),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+      ],
+      name: "Wongi.Engine",
+      source_url: "https://github.com/ulfurinn/wongi-engine-elixir",
+      docs: [
+        logo: "./wongi.png"
       ]
     ]
   end
