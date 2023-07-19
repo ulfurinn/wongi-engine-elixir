@@ -9,5 +9,6 @@
 /tmp
 *.beam
 *.ez
+elixir_buildpack.config
 erl_crash.dump
 wongi_engine-*.tar
