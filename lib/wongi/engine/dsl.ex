@@ -8,6 +8,7 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.Var
 
+  @spec rule(atom(), keyword) :: Rule.t()
   def rule(name \\ nil, opts) do
     Rule.new(
       name,
@@ -29,6 +30,7 @@ defmodule Wongi.Engine.DSL do
   def gen(s, p, o), do: Generator.new(s, p, o)
 
   defprotocol Clause do
+    @moduledoc false
     def compile(clause, context)
   end
 end

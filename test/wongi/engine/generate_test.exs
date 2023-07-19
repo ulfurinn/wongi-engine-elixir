@@ -12,14 +12,14 @@ defmodule Wongi.Engine.GenerateTest do
       )
 
     asserted = clean |> assert(:a, :b, :c) |> assert(:c, :d, :e)
-    assert [_] = find(asserted, [:c, :d, :e])
+    assert [_] = find(asserted, :c, :d, :e) |> Enum.to_list()
 
     retracted =
       asserted
       |> retract(:a, :b, :c)
       |> retract(:c, :d, :e)
 
-    assert [] = find(retracted, [:c, :d, :e])
+    assert [] = find(retracted, :c, :d, :e) |> Enum.to_list()
 
     assert clean.overlay == retracted.overlay
   end
@@ -81,7 +81,7 @@ defmodule Wongi.Engine.GenerateTest do
   end
 
   test "generates and cleans up transitive facts" do
-    {ref, clean_rete} =
+    {clean_rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -102,28 +102,28 @@ defmodule Wongi.Engine.GenerateTest do
       |> assert(:alice, :relative, :bob)
       |> assert(:bob, :relative, :charlie)
 
-    assert [_] = find(rete_with_facts, [:alice, :relative, :charlie])
+    assert [_] = find(rete_with_facts, :alice, :relative, :charlie) |> Enum.to_list()
     assert [_] = tokens(rete_with_facts, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:relative, :transitive, true)
 
-    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:alice, :relative, :bob)
 
-    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:bob, :relative, :charlie)
 
-    assert [] = find(rete_with_one_fact_removed, [:alice, :relative, :charlie])
+    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_all_removed =
@@ -137,7 +137,7 @@ defmodule Wongi.Engine.GenerateTest do
   end
 
   test "handles a transitive diamond" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -183,7 +183,7 @@ defmodule Wongi.Engine.GenerateTest do
   end
 
   test "tokens do not get duplicated" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(

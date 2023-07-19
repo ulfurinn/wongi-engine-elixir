@@ -49,12 +49,14 @@ defmodule Wongi.Engine.Rete do
     |> seed()
   end
 
+  @spec compile(t(), Wongi.Engine.DSL.Rule.t()) :: t()
   def compile(rete, rule) do
     Compiler.compile(rete, rule)
   end
 
+  @spec compile_and_get_ref(t(), Wongi.Engine.DSL.Rule.t()) :: {t(), reference()}
   def compile_and_get_ref(rete, rule) do
-    {rule.ref, Compiler.compile(rete, rule)}
+    {Compiler.compile(rete, rule), rule.ref}
   end
 
   def assert(rete, wme_ish, generator \\ nil)
@@ -64,7 +66,7 @@ defmodule Wongi.Engine.Rete do
     |> trigger({:assert, wme, generator})
   end
 
-  def assert(rete, [s, p, o], generator),
+  def assert(rete, {s, p, o}, generator),
     do: assert(rete, WME.new(s, p, o), generator)
 
   def assert(rete, subject, object, predicate, generator \\ nil)
@@ -79,7 +81,7 @@ defmodule Wongi.Engine.Rete do
     |> trigger({:retract, wme, generator})
   end
 
-  def retract(rete, [s, p, o], generator),
+  def retract(rete, {s, p, o}, generator),
     do: retract(rete, WME.new(s, p, o), generator)
 
   def retract(rete, subject, object, predicate, generator \\ nil)
@@ -89,9 +91,9 @@ defmodule Wongi.Engine.Rete do
 
   def find(%__MODULE__{overlay: overlay}, %WME{} = wme) when not template?(wme) do
     if Overlay.has_wme?(overlay, wme) do
-      [wme]
+      MapSet.new([wme])
     else
-      []
+      MapSet.new()
     end
   end
 
@@ -105,7 +107,7 @@ defmodule Wongi.Engine.Rete do
     |> Overlay.matching(wme)
   end
 
-  def find(rete, [s, p, o]),
+  def find(rete, {s, p, o}),
     do: find(rete, WME.new(s, p, o))
 
   def find(rete, s, p, o),

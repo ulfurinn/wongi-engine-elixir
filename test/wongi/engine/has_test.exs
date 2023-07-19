@@ -2,7 +2,7 @@ defmodule Wongi.Engine.HasTest do
   use Wongi.TestCase
 
   test "matches constant facts" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -23,7 +23,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "deactivates on retraction" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -45,7 +45,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "unifies variables" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -69,7 +69,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "matches with wildcards" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -90,7 +90,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "matches with new variables" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -113,7 +113,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "matches with bound variables" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -138,7 +138,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "matches with bound variables when asserted from bottom up" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -163,7 +163,7 @@ defmodule Wongi.Engine.HasTest do
   end
 
   test "deactivates when a precondition is retracted" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(

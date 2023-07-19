@@ -2,7 +2,7 @@ defmodule Wongi.Engine.NegTest do
   use Wongi.TestCase
 
   test "triggers on an empty rete" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -17,13 +17,13 @@ defmodule Wongi.Engine.NegTest do
     rete = rete |> assert(:a, :b, :c)
     assert [] = rete |> tokens(ref) |> Enum.to_list()
 
-    rete = rete |> retract([:a, :b, :c])
+    rete = rete |> retract(:a, :b, :c)
     assert [_token] = rete |> tokens(ref) |> Enum.to_list()
   end
 
   describe "retraction with neg after has" do
     setup do
-      {ref, rete} =
+      {rete, ref} =
         new()
         |> compile_and_get_ref(
           rule(
@@ -143,7 +143,7 @@ defmodule Wongi.Engine.NegTest do
   end
 
   test "tests against variables" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(
@@ -169,7 +169,7 @@ defmodule Wongi.Engine.NegTest do
   end
 
   test "unifies variables" do
-    {ref, rete} =
+    {rete, ref} =
       new()
       |> compile_and_get_ref(
         rule(

@@ -5,7 +5,7 @@ defmodule Wongi.Engine.WMETest do
 
   describe "new/1" do
     test "creates a WME" do
-      assert %Wongi.Engine.WME{subject: :a, predicate: :b, object: :c} = new([:a, :b, :c])
+      assert %Wongi.Engine.WME{subject: :a, predicate: :b, object: :c} = new({:a, :b, :c})
     end
   end
 
