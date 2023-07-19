@@ -1,17 +1,6 @@
 defmodule Wongi.Engine.GenerateTest do
   use Wongi.TestCase
 
-  @transitive [
-    forall: [
-      has(var(:p), :transitive, true),
-      has(var(:x), var(:p), var(:y)),
-      has(var(:y), var(:p), var(:z))
-    ],
-    do: [
-      gen(var(:x), var(:p), var(:z))
-    ]
-  ]
-
   test "generates and cleans up facts" do
     clean =
       new()
@@ -35,9 +24,77 @@ defmodule Wongi.Engine.GenerateTest do
     assert clean.overlay == retracted.overlay
   end
 
+  test "generates symmetric facts" do
+    rete =
+      new()
+      |> compile(
+        rule(
+          forall: [
+            has(var(:p), :symmetric, true),
+            has(var(:x), var(:p), var(:y))
+          ],
+          do: [
+            gen(var(:y), var(:p), var(:x))
+          ]
+        )
+      )
+      |> assert(:friend, :symmetric, true)
+      |> assert(:alice, :friend, :bob)
+
+    assert 3 = rete |> find(:_, :_, :_) |> Enum.count()
+    assert [_] = rete |> find(:bob, :friend, :alice) |> Enum.to_list()
+
+    rete =
+      rete
+      |> retract(:alice, :friend, :bob)
+
+    assert 1 = rete |> find(:_, :_, :_) |> Enum.count()
+  end
+
+  test "generates reflexive facts" do
+    rete =
+      new()
+      |> compile(
+        rule(
+          forall: [
+            has(var(:p), :reflexive, true),
+            has(var(:x), var(:p), var(:y))
+          ],
+          do: [
+            gen(var(:x), var(:p), var(:x)),
+            gen(var(:y), var(:p), var(:y))
+          ]
+        )
+      )
+      |> assert(:p, :reflexive, true)
+      |> assert(:x, :p, :y)
+
+    assert 4 = rete |> find(:_, :_, :_) |> Enum.count()
+    assert [_] = rete |> find(:x, :p, :x) |> Enum.to_list()
+    assert [_] = rete |> find(:y, :p, :y) |> Enum.to_list()
+
+    rete =
+      rete
+      |> retract(:x, :p, :y)
+
+    assert 1 = rete |> find(:_, :_, :_) |> Enum.count()
+  end
+
   test "generates and cleans up transitive facts" do
-    ruledef = @transitive
-    {ref, clean_rete} = new() |> compile_and_get_ref(rule(ruledef))
+    {ref, clean_rete} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(var(:p), :transitive, true),
+            has(var(:x), var(:p), var(:y)),
+            has(var(:y), var(:p), var(:z))
+          ],
+          do: [
+            gen(var(:x), var(:p), var(:z))
+          ]
+        )
+      )
 
     rete_with_facts =
       clean_rete
@@ -77,6 +134,52 @@ defmodule Wongi.Engine.GenerateTest do
 
     # make sure there are no internal resource leaks
     assert clean_rete.overlay == rete_with_all_removed.overlay
+  end
+
+  test "handles a transitive diamond" do
+    {ref, rete} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(var(:p), :transitive, true),
+            has(var(:x), var(:p), var(:y)),
+            has(var(:y), var(:p), var(:z))
+          ],
+          do: [
+            gen(var(:x), var(:p), var(:z))
+          ]
+        )
+      )
+
+    clean_rete = rete
+
+    rete =
+      rete
+      |> assert(:relative, :transitive, true)
+      |> assert(:alice, :relative, :bob)
+      |> assert(:bob, :relative, :dwight)
+      |> assert(:alice, :relative, :claire)
+      |> assert(:claire, :relative, :dwight)
+
+    assert [_] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert 2 = rete |> tokens(ref) |> Enum.count()
+
+    rete = rete |> retract(:claire, :relative, :dwight)
+    assert [_] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert 1 = rete |> tokens(ref) |> Enum.count()
+
+    rete = rete |> retract(:alice, :relative, :bob)
+    assert [] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert 0 = rete |> tokens(ref) |> Enum.count()
+
+    rete =
+      rete
+      |> retract(:bob, :relative, :dwight)
+      |> retract(:alice, :relative, :claire)
+      |> retract(:relative, :transitive, true)
+
+    assert ^clean_rete = rete
   end
 
   test "tokens do not get duplicated" do

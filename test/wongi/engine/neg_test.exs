@@ -21,25 +21,125 @@ defmodule Wongi.Engine.NegTest do
     assert [_token] = rete |> tokens(ref) |> Enum.to_list()
   end
 
-  test "deactivates on invalidated preconditions" do
-    {ref, rete} =
-      new()
-      |> compile_and_get_ref(
-        rule(
-          forall: [
-            has(:x, :y, :z),
-            neg(:a, :b, :c)
-          ]
+  describe "retraction with neg after has" do
+    setup do
+      {ref, rete} =
+        new()
+        |> compile_and_get_ref(
+          rule(
+            forall: [
+              has(:x, :u, var(:y)),
+              neg(var(:y), :w, any())
+            ]
+          )
         )
-      )
 
-    assert [] = rete |> tokens(ref) |> Enum.to_list()
+      %{rete: rete, ref: ref}
+    end
 
-    rete = rete |> assert(:x, :y, :z)
-    assert [_token] = rete |> tokens(ref) |> Enum.to_list()
+    test "case 1", %{rete: rete, ref: ref} do
+      rete =
+        rete
+        |> assert(:x, :u, :y)
 
-    rete = rete |> retract(:x, :y, :z)
-    assert [] = rete |> tokens(ref) |> Enum.to_list()
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> assert(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:y, :w, :z)
+
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "case 2", %{rete: rete, ref: ref} do
+      rete =
+        rete
+        |> assert(:x, :u, :y)
+
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> assert(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "case 3", %{rete: rete, ref: ref} do
+      rete =
+        rete
+        |> assert(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> assert(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "case 4", %{rete: rete, ref: ref} do
+      rete =
+        rete
+        |> assert(:y, :w, :z)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> assert(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:y, :w, :z)
+
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+
+      rete =
+        rete
+        |> retract(:x, :u, :y)
+
+      assert [] = rete |> tokens(ref) |> Enum.to_list()
+    end
   end
 
   test "tests against variables" do
