@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Filter.InList do
+  @moduledoc false
   defstruct [:a, :b]
 
   def new(a, b) do

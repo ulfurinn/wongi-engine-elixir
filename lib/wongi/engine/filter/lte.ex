@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Filter.LTE do
+  @moduledoc false
   defstruct [:a, :b]
 
   def new(a, b) do

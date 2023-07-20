@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Filter.GTE do
+  @moduledoc false
   defstruct [:a, :b]
 
   def new(a, b) do

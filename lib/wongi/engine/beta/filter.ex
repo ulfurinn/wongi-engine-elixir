@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Beta.Filter do
+  @moduledoc false
   @type t() :: %__MODULE__{}
   defstruct [:ref, :parent_ref, :filter]
 

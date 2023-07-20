@@ -1,9 +1,9 @@
 defmodule Wongi.Engine.Beta.Root do
   @moduledoc false
 
-  @type t() :: %__MODULE__{}
-
   alias Wongi.Engine.Token
+
+  @type t() :: %__MODULE__{}
   defstruct [:ref]
 
   def new do

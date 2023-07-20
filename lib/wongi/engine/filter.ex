@@ -4,6 +4,7 @@ defprotocol Wongi.Engine.Filter do
 end
 
 defmodule Wongi.Engine.Filter.Common do
+  @moduledoc false
   alias Wongi.Engine.DSL.Var
   def resolve(%Var{name: name}, token), do: token[name]
   def resolve(literal, _), do: literal

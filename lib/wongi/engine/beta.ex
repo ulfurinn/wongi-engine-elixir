@@ -94,6 +94,7 @@ defmodule Wongi.Engine.Beta.Common do
 end
 
 defmodule Wongi.Engine.Beta.NonAlphaListening do
+  @moduledoc false
   def alpha_activate(%mod{}, _, _), do: raise("#{mod} cannot be alpha-activated")
   def alpha_deactivate(%mod{}, _, _), do: raise("#{mod} cannot be alpha-deactivated")
 end

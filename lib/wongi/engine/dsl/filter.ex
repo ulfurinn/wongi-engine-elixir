@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.DSL.Filter do
+  @moduledoc false
   defstruct [:filter]
 
   def new(filter) do
