@@ -28,6 +28,7 @@ defmodule Wongi.Engine.Rete do
     :beta_root,
     :beta_table,
     :beta_subscriptions,
+    :productions,
     :op_queue,
     :processing
   ]
@@ -41,6 +42,7 @@ defmodule Wongi.Engine.Rete do
       beta_root: root,
       beta_table: %{Beta.ref(root) => root},
       beta_subscriptions: %{},
+      productions: MapSet.new(),
       op_queue: :queue.new(),
       processing: false
     }
@@ -50,11 +52,12 @@ defmodule Wongi.Engine.Rete do
   @spec compile(t(), Wongi.Engine.DSL.Rule.t()) :: t()
   def compile(rete, rule) do
     Compiler.compile(rete, rule)
+    |> add_production(rule.ref)
   end
 
   @spec compile_and_get_ref(t(), Wongi.Engine.DSL.Rule.t()) :: {t(), reference()}
   def compile_and_get_ref(rete, rule) do
-    {Compiler.compile(rete, rule), rule.ref}
+    {compile(rete, rule), rule.ref}
   end
 
   def assert(rete, wme_ish, generator \\ nil)
@@ -300,6 +303,13 @@ defmodule Wongi.Engine.Rete do
     Overlay.neg_join_results(overlay, token_or_wme)
   end
 
+  defp add_production(%__MODULE__{productions: productions} = rete, ref) do
+    rete
+    |> put_productions(MapSet.put(productions, ref))
+  end
+
+  def productions(%__MODULE__{productions: productions}), do: productions
+
   defp put_op_queue(%__MODULE__{} = rete, op_queue) do
     %__MODULE__{rete | op_queue: op_queue}
   end
@@ -318,5 +328,9 @@ defmodule Wongi.Engine.Rete do
 
   defp put_beta_subscriptions(%__MODULE__{} = rete, beta_subscriptions) do
     %__MODULE__{rete | beta_subscriptions: beta_subscriptions}
+  end
+
+  defp put_productions(%__MODULE__{} = rete, productions) do
+    %__MODULE__{rete | productions: productions}
   end
 end

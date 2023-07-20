@@ -62,4 +62,6 @@ defmodule Wongi.Engine do
 
   @doc "Returns a set of all tokens for the given production node reference."
   defdelegate tokens(rete, node), to: Rete
+  @doc "Returns all production node references."
+  defdelegate productions(rete), to: Rete
 end
