@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.DSL.Assign do
+  @moduledoc false
   defstruct [:name, :value]
 
   def new(name, value), do: %__MODULE__{name: name, value: value}
