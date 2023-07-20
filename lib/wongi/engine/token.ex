@@ -3,6 +3,8 @@ defmodule Wongi.Engine.Token do
   @moduledoc false
   alias Wongi.Engine.Beta
 
+  @type t() :: %__MODULE__{}
+
   @derive Inspect
   defstruct [:ref, :node_ref, :parents, :wme, :assignments]
 

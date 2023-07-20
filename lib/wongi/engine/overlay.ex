@@ -8,6 +8,7 @@ defmodule Wongi.Engine.Overlay do
 
   require Logger
 
+  @type t() :: %__MODULE__{}
   defstruct [
     :wmes,
     :indexes,
@@ -103,7 +104,8 @@ defmodule Wongi.Engine.Overlay do
     |> delete_wme(wme)
   end
 
-  def add_token(%__MODULE__{tokens: tokens} = overlay, token) do
+  @spec add_token(t(), Wongi.Engine.Token.t()) :: t()
+  def add_token(%__MODULE__{tokens: tokens} = overlay, %Wongi.Engine.Token{} = token) do
     node_tokens =
       tokens
       |> Map.get_lazy(token.node_ref, &MapSet.new/0)

@@ -1,5 +1,7 @@
 defmodule Wongi.Engine.Beta.Production do
   @moduledoc false
+
+  @type t() :: %__MODULE__{}
   defstruct [:ref, :parent_ref, :actions]
 
   def new(ref, parent_ref, actions) do
@@ -28,8 +30,20 @@ defmodule Wongi.Engine.Beta.Production do
         do: true
 
     def equivalent?(_, _, _), do: false
-    def alpha_activate(_, _, _), do: raise("production nodes cannot be alpha activated")
-    def alpha_deactivate(_, _, _), do: raise("production nodes cannot be alpha deactivated")
+
+    @spec alpha_activate(
+            Wongi.Engine.Beta.Production.t(),
+            Wongi.Engine.WME.t(),
+            Wongi.Engine.Rete.t()
+          ) :: no_return()
+    defdelegate alpha_activate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
+
+    @spec alpha_deactivate(
+            Wongi.Engine.Beta.Production.t(),
+            Wongi.Engine.WME.t(),
+            Wongi.Engine.Rete.t()
+          ) :: no_return()
+    defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(%@for{actions: actions}, token, rete) do
       rete = Rete.add_token(rete, token)

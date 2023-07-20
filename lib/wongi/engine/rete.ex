@@ -266,6 +266,8 @@ defmodule Wongi.Engine.Rete do
     Map.get(beta_subscriptions, Beta.ref(node), [])
   end
 
+  @spec add_token(Wongi.Engine.Rete.t(), Wongi.Engine.Token.t()) ::
+          Wongi.Engine.Rete.t()
   def add_token(%__MODULE__{overlay: overlay} = rete, token) do
     rete
     |> put_overlay(Overlay.add_token(overlay, token))

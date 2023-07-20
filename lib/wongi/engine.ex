@@ -7,7 +7,7 @@ defmodule Wongi.Engine do
 
   alias Wongi.Engine.Rete
 
-  @opaque t() :: Rete.t()
+  @type t() :: Rete.t()
   @type fact() :: {any(), any(), any()} | Wongi.Engine.WME.t()
   @type template() :: {any(), any(), any()} | Wongi.Engine.WME.t()
   @type rule() :: Wongi.Engine.DSL.Rule.t()

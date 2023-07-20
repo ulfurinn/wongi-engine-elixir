@@ -1,5 +1,8 @@
 defmodule Wongi.Engine.Beta.Root do
   @moduledoc false
+
+  @type t() :: %__MODULE__{}
+
   alias Wongi.Engine.Token
   defstruct [:ref]
 
@@ -38,8 +41,16 @@ defmodule Wongi.Engine.Beta.Root do
 
     def equivalent?(_, _, _), do: false
 
-    def alpha_activate(_, _, _), do: raise("Root node cannot be activated")
-    def alpha_deactivate(_, _, _), do: raise("Root node cannot be deactivated")
+    @spec alpha_activate(Wongi.Engine.Beta.Root.t(), Wongi.Engine.WME.t(), Wongi.Engine.Rete.t()) ::
+            no_return()
+    defdelegate alpha_activate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
+
+    @spec alpha_deactivate(
+            Wongi.Engine.Beta.Root.t(),
+            Wongi.Engine.WME.t(),
+            Wongi.Engine.Rete.t()
+          ) :: no_return()
+    defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(%@for{ref: _ref}, _token, rete) do
       rete

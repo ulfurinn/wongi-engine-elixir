@@ -6,7 +6,7 @@ defmodule Wongi.Engine.WME do
   """
   alias Wongi.Engine.DSL.Var
 
-  @opaque t() :: %__MODULE__{}
+  @type t() :: %__MODULE__{}
 
   defstruct [:subject, :predicate, :object]
 
