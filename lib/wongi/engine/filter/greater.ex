@@ -10,7 +10,7 @@ defmodule Wongi.Engine.Filter.Greater do
     alias Wongi.Engine.Filter.Common
 
     def pass?(%@for{a: a, b: b}, token) do
-      Common.resolve(a, token) > Common.resolve(b, token)
+      Comp.greater_than?(Common.resolve(a, token), Common.resolve(b, token))
     end
   end
 end

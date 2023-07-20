@@ -10,7 +10,7 @@ defmodule Wongi.Engine.Filter.LTE do
     alias Wongi.Engine.Filter.Common
 
     def pass?(%@for{a: a, b: b}, token) do
-      Common.resolve(a, token) <= Common.resolve(b, token)
+      Comp.less_or_equal?(Common.resolve(a, token), Common.resolve(b, token))
     end
   end
 end

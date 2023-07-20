@@ -30,6 +30,7 @@ defmodule Wongi.Engine.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:comparable, "~> 1.0.0"},
       # dev tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
