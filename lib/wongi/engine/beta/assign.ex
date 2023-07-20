@@ -34,7 +34,9 @@ defmodule Wongi.Engine.Beta.Assign do
       end)
     end
 
-    def equivalent?(%@for{name: name, value: value}, %@for{name: name, value: value}, _rete), do: true
+    def equivalent?(%@for{name: name, value: value}, %@for{name: name, value: value}, _rete),
+      do: true
+
     def equivalent?(_, _, _), do: false
 
     @spec alpha_activate(
