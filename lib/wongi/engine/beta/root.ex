@@ -19,16 +19,13 @@ defmodule Wongi.Engine.Beta.Root do
   defimpl Wongi.Engine.Beta do
     alias Wongi.Engine.Beta
 
-    require Logger
-
     def ref(%@for{ref: ref}) do
       ref
     end
 
     def parent_ref(_), do: nil
 
-    def seed(%@for{} = root, beta, rete) do
-      Logger.debug("seed #{inspect(root)} into #{inspect(beta)}")
+    def seed(%@for{}, beta, rete) do
       Beta.beta_activate(beta, Token.new(beta, [], nil), rete)
     end
 

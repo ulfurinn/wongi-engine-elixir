@@ -8,8 +8,6 @@ defmodule Wongi.Engine.Rete do
   alias Wongi.Engine.Overlay
   alias Wongi.Engine.WME
 
-  require Logger
-
   @alpha_patterns [
     [:_, :_, :_],
     [:subject, :_, :_],

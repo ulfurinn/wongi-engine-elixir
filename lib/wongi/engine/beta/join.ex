@@ -69,7 +69,6 @@ defmodule Wongi.Engine.Beta.Join do
   defimpl Beta do
     alias Wongi.Engine.Beta.Common
     alias Wongi.Engine.Rete
-    require Logger
 
     def ref(%@for{ref: ref}) do
       ref

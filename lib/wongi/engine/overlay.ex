@@ -6,8 +6,6 @@ defmodule Wongi.Engine.Overlay do
   alias Wongi.Engine.Overlay.JoinResults
   alias Wongi.Engine.WME
 
-  require Logger
-
   @type t() :: %__MODULE__{}
   defstruct [
     :wmes,

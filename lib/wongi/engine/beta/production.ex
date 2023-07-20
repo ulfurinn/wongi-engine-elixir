@@ -16,8 +16,6 @@ defmodule Wongi.Engine.Beta.Production do
     alias Wongi.Engine.Action
     alias Wongi.Engine.Rete
 
-    require Logger
-
     def ref(%@for{ref: ref}), do: ref
     def parent_ref(%@for{parent_ref: parent_ref}), do: parent_ref
     def seed(_, _, _), do: raise("production nodes cannot have descendants")
