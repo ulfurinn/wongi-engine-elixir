@@ -13,10 +13,12 @@ defmodule Wongi.Engine.MixProject do
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
       ],
       name: "Wongi.Engine",
+      description: "A pure-Elixir rule engine.",
       source_url: "https://github.com/ulfurinn/wongi-engine-elixir",
       docs: [
         logo: "./wongi.png"
-      ]
+      ],
+      package: package()
     ]
   end
 
@@ -40,4 +42,13 @@ defmodule Wongi.Engine.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp package do
+    %{
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/ulfurinn/wongi-engine-elixir"
+      }
+    }
+  end
 end
