@@ -3,6 +3,7 @@ defmodule Wongi.Engine.DSL do
   Rule definition functions.
   """
   alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
   alias Wongi.Engine.DSL.Neg
@@ -31,6 +32,8 @@ defmodule Wongi.Engine.DSL do
 
   def neg(s, p, o), do: Neg.new(s, p, o)
   def missing(s, p, o), do: Neg.new(s, p, o)
+
+  def assign(name, value), do: Assign.new(name, value)
 
   def equal(a, b), do: Filter.new(Equal.new(a, b))
   def diff(a, b), do: Filter.new(Diff.new(a, b))

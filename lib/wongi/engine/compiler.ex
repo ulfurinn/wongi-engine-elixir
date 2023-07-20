@@ -22,7 +22,7 @@ defmodule Wongi.Engine.Compiler do
     context.rete
   end
 
-  def find_existing(%__MODULE__{rete: rete, node_ref: node_ref}, node) do
+  def find_existing(%__MODULE__{rete: rete, node_ref: node_ref} = _context, node) do
     rete
     |> Rete.beta_subscriptions(node_ref)
     |> Enum.find(&Beta.equivalent?(&1, node, rete))
