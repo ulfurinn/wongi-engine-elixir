@@ -1,6 +1,8 @@
 # credo:disable-for-this-file Credo.Check.Refactor.Nesting
 defmodule Wongi.Engine.Token do
-  @moduledoc false
+  @moduledoc """
+  An intermediate data structure representing a partial match.
+  """
   alias Wongi.Engine.Beta
 
   @type t() :: %__MODULE__{}

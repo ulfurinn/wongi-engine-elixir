@@ -10,7 +10,7 @@ defmodule Wongi.Engine.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: [
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+        plt_file: {:no_warn, "plts/dialyzer.plt"}
       ],
       name: "Wongi.Engine",
       description: "A pure-Elixir rule engine.",

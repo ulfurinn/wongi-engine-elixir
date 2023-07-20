@@ -1,5 +1,9 @@
 defmodule Wongi.Engine.Rete do
-  @moduledoc false
+  @moduledoc """
+  The Rete network.
+
+  `Wongi.Engine` is the public API. Avoid calling this module directly.
+  """
   import Wongi.Engine.WME, only: [root?: 1, template?: 1]
 
   alias Wongi.Engine.Beta
