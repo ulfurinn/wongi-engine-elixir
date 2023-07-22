@@ -28,8 +28,8 @@ defmodule Wongi.Engine.DSL do
     )
   end
 
-  def has(s, p, o), do: Has.new(s, p, o)
-  def fact(s, p, o), do: Has.new(s, p, o)
+  def has(s, p, o, opts \\ []), do: Has.new(s, p, o, opts)
+  def fact(s, p, o, opts \\ []), do: Has.new(s, p, o, opts)
 
   def neg(s, p, o), do: Neg.new(s, p, o)
   def missing(s, p, o), do: Neg.new(s, p, o)

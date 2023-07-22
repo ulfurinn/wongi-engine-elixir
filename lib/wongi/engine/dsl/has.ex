@@ -2,13 +2,14 @@
 defmodule Wongi.Engine.DSL.Has do
   @moduledoc false
   alias Wongi.Engine.DSL
-  defstruct [:subject, :predicate, :object]
+  defstruct [:subject, :predicate, :object, :filters]
 
-  def new(subject, predicate, object) do
+  def new(subject, predicate, object, opts \\ []) do
     %__MODULE__{
       subject: subject,
       predicate: predicate,
-      object: object
+      object: object,
+      filters: opts[:when]
     }
   end
 
@@ -20,7 +21,7 @@ defmodule Wongi.Engine.DSL.Has do
     alias Wongi.Engine.Rete
     alias Wongi.Engine.WME
 
-    def compile(%@for{subject: s, predicate: p, object: o} = clause, context) do
+    def compile(%@for{subject: s, predicate: p, object: o, filters: filters} = clause, context) do
       {context, tests, assignments} =
         [:subject, :predicate, :object]
         |> Enum.reduce({context, %{}, %{}}, fn field, {context, tests, assignments} = acc ->
@@ -40,7 +41,9 @@ defmodule Wongi.Engine.DSL.Has do
 
       template = WME.template(s, p, o)
 
-      node = Join.new(context.node_ref, template, tests, assignments)
+      filters = extract_filters(filters)
+
+      node = Join.new(context.node_ref, template, tests, assignments, when: filters)
 
       case find_existing(context, node) do
         nil ->
@@ -55,5 +58,9 @@ defmodule Wongi.Engine.DSL.Has do
           |> advance_existing(node)
       end
     end
+
+    defp extract_filters(nil), do: nil
+    defp extract_filters(%Wongi.Engine.DSL.Filter{filter: filter}), do: filter
+    defp extract_filters(filters) when is_list(filters), do: Enum.map(filters, &extract_filters/1)
   end
 end

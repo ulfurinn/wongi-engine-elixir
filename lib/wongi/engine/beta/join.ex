@@ -2,19 +2,21 @@
 defmodule Wongi.Engine.Beta.Join do
   @moduledoc false
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.Filter
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
 
   @derive Inspect
-  defstruct [:ref, :parent_ref, :template, :tests, :assignments]
+  defstruct [:ref, :parent_ref, :template, :tests, :assignments, :filters]
 
-  def new(parent_ref, template, tests, assignments) do
+  def new(parent_ref, template, tests, assignments, opts \\ []) do
     %__MODULE__{
       ref: make_ref(),
       parent_ref: parent_ref,
       template: template,
       tests: tests,
-      assignments: assignments
+      assignments: assignments,
+      filters: opts[:when]
     }
   end
 
@@ -66,6 +68,14 @@ defmodule Wongi.Engine.Beta.Join do
     end)
   end
 
+  def filter_pass?(%__MODULE__{filters: nil}, _), do: true
+  def filter_pass?(%__MODULE__{filters: filters}, token), do: filter_pass?(filters, token)
+
+  def filter_pass?(filters, token) when is_list(filters),
+    do: Enum.all?(filters, &filter_pass?(&1, token))
+
+  def filter_pass?(filter, token), do: Filter.pass?(filter, token)
+
   defimpl Beta do
     alias Wongi.Engine.Beta.Common
     alias Wongi.Engine.Rete
@@ -88,8 +98,8 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def equivalent?(
-          %@for{parent_ref: r, template: t, tests: ts, assignments: a},
-          %@for{parent_ref: r, template: t, tests: ts, assignments: a},
+          %@for{parent_ref: r, template: t, tests: ts, assignments: a, filters: f},
+          %@for{parent_ref: r, template: t, tests: ts, assignments: a, filters: f},
           _rete
         ),
         do: true
@@ -136,7 +146,15 @@ defmodule Wongi.Engine.Beta.Join do
     defp propagate_matching(join, token, wme, betas, rete) do
       case @for.match(join, token, wme) do
         {:ok, assignments} ->
-          Common.beta_activate(betas, &Token.new(&1, [token], wme, assignments), rete)
+          token_ctor = fn beta ->
+            token = Token.new(beta, [token], wme, assignments)
+
+            if @for.filter_pass?(join, token) do
+              token
+            end
+          end
+
+          Common.beta_activate(betas, token_ctor, rete)
 
         _ ->
           rete

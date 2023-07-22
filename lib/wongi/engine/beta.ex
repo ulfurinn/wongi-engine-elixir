@@ -66,7 +66,10 @@ defmodule Wongi.Engine.Beta.Common do
 
   def beta_activate(betas, token_ctor, rete) do
     Enum.reduce(betas, rete, fn beta, rete ->
-      Beta.beta_activate(beta, token_ctor.(beta), rete)
+      case token_ctor.(beta) do
+        nil -> rete
+        token -> Beta.beta_activate(beta, token, rete)
+      end
     end)
   end
 
