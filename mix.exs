@@ -18,6 +18,7 @@ defmodule Wongi.Engine.MixProject do
       docs: [
         logo: "./wongi.png"
       ],
+      aliases: aliases(),
       package: package()
     ]
   end
@@ -42,6 +43,21 @@ defmodule Wongi.Engine.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp aliases do
+    [
+      lint: [
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer"
+      ],
+      "lint.ci": [
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer --format github"
+      ]
+    ]
+  end
 
   defp package do
     %{

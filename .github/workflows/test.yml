@@ -50,21 +50,15 @@ jobs:
           key: ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}
           restore-keys: ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}
 
-      - name: Check formatting
-        run: mix format --check-formatted
-
       - name: Run tests
         run: mix test
-
-      - name: Lint
-        run: mix credo
 
       - name: Create PLTs
         if: steps.plt_cache.outputs.cache-hit != 'true'
         run: mix dialyzer --plt
 
-      - name: Run dialyzer
-        run: mix dialyzer --format github
+      - name: Lint
+        run: mix lint.ci
 
   publish:
     
