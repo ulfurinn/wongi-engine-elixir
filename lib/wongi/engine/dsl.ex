@@ -11,6 +11,7 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.Filter.Diff
   alias Wongi.Engine.Filter.Equal
+  alias Wongi.Engine.Filter.Function
   alias Wongi.Engine.Filter.Greater
   alias Wongi.Engine.Filter.GTE
   alias Wongi.Engine.Filter.InList
@@ -43,6 +44,7 @@ defmodule Wongi.Engine.DSL do
   def gte(a, b), do: Filter.new(GTE.new(a, b))
   def in_list(a, b), do: Filter.new(InList.new(a, b))
   def not_in_list(a, b), do: Filter.new(NotInList.new(a, b))
+  def filter(func), do: Filter.new(Function.new(func))
 
   def var(name), do: Var.new(name)
 
