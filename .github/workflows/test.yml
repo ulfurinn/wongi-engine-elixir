@@ -8,6 +8,8 @@ name: Elixir CI
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main" ]
 
@@ -63,3 +65,35 @@ jobs:
 
       - name: Run dialyzer
         run: mix dialyzer --format github
+
+  publish:
+    
+    if: github.ref_type == 'tag'
+    needs: build
+    name: Publish to Hex.pm
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@61e01a43a562a89bfc54c7f9a378ff67b03e4a21 # v1.16.0
+        id: beam
+        with:
+          elixir-version: '1.15.3' # [Required] Define the Elixir version
+          otp-version: '26.0'      # [Required] Define the Erlang/OTP version
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Build
+        run: mix do deps.get + compile
+
+      - name: Publish
+        run: mix hex.publish --yes
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
