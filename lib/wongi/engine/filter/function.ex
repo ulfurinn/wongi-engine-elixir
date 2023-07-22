@@ -1,4 +1,5 @@
 defmodule Wongi.Engine.Filter.Function do
+  @moduledoc false
   defstruct [:func]
 
   def new(func) do
