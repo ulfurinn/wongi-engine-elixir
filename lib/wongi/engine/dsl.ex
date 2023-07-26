@@ -3,6 +3,7 @@ defmodule Wongi.Engine.DSL do
   Rule definition functions.
   """
   alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Any
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
@@ -49,6 +50,7 @@ defmodule Wongi.Engine.DSL do
   def var(name), do: Var.new(name)
 
   def any, do: :_
+  def any(clauses), do: Any.new(clauses)
 
   def gen(s, p, o), do: Generator.new(s, p, o)
 

@@ -1,7 +1,7 @@
 defprotocol Wongi.Engine.Beta do
   @moduledoc false
   def ref(beta)
-  def parent_ref(beta)
+  def parent_refs(beta)
   def seed(beta, listener, rete)
 
   def equivalent?(beta, other, rete)
@@ -18,7 +18,7 @@ defimpl Wongi.Engine.Beta, for: Reference do
   alias Wongi.Engine.Rete
 
   def ref(ref), do: ref
-  def parent_ref(_), do: raise("cannot fetch parent of bare ref")
+  def parent_refs(_), do: raise("cannot fetch parent of bare ref")
 
   def equivalent?(ref, other, rete) do
     rete

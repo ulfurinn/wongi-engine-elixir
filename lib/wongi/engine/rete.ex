@@ -137,9 +137,11 @@ defmodule Wongi.Engine.Rete do
     do: subscribe_to_alpha(rete, WME.new(s, p, o), node)
 
   def add_beta(%__MODULE__{beta_table: beta_table} = rete, node) do
-    rete
-    |> put_beta_table(Map.put(beta_table, Beta.ref(node), node))
-    |> subscribe_to_beta(Beta.parent_ref(node), Beta.ref(node))
+    ref = Beta.ref(node)
+
+    rete = put_beta_table(rete, Map.put(beta_table, ref, node))
+
+    Enum.reduce(Beta.parent_refs(node), rete, &subscribe_to_beta(&2, &1, ref))
   end
 
   def subscribe_to_beta(%__MODULE__{beta_subscriptions: beta_subscriptions} = rete, parent, child)

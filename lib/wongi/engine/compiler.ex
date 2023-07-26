@@ -32,9 +32,12 @@ defmodule Wongi.Engine.Compiler do
     %__MODULE__{context | variables: MapSet.put(variables, var)}
   end
 
-  def advance(%__MODULE__{rete: rete, node_ref: parent_ref} = context, node) do
+  def advance(%__MODULE__{rete: rete} = context, node) do
+    parent_refs = Beta.parent_refs(node)
+
     rete =
-      Beta.seed(parent_ref, node, rete)
+      parent_refs
+      |> Enum.reduce(rete, &Beta.seed(&1, node, &2))
       |> Rete.add_beta(node)
 
     context

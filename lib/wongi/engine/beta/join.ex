@@ -84,8 +84,8 @@ defmodule Wongi.Engine.Beta.Join do
       ref
     end
 
-    def parent_ref(%@for{parent_ref: parent_ref}) do
-      parent_ref
+    def parent_refs(%@for{parent_ref: parent_ref}) do
+      [parent_ref]
     end
 
     def seed(%@for{template: template} = join, beta, rete) do

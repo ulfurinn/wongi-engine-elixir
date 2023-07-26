@@ -24,7 +24,7 @@ defmodule Wongi.Engine.Beta.Assign do
     alias Wongi.Engine.Token
 
     def ref(%@for{ref: ref}), do: ref
-    def parent_ref(%@for{parent_ref: parent_ref}), do: parent_ref
+    def parent_refs(%@for{parent_ref: parent_ref}), do: [parent_ref]
 
     def seed(%@for{name: name, value: value} = node, beta, rete) do
       tokens = Rete.tokens(rete, node)

@@ -75,7 +75,7 @@ defmodule Wongi.Engine.Beta.Negative do
     alias Wongi.Engine.Rete
 
     def ref(%@for{ref: ref}), do: ref
-    def parent_ref(%@for{parent_ref: parent_ref}), do: parent_ref
+    def parent_refs(%@for{parent_ref: parent_ref}), do: [parent_ref]
 
     def seed(%@for{template: template} = neg, beta, rete) do
       tokens = Rete.tokens(rete, neg)

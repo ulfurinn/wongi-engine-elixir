@@ -23,7 +23,7 @@ defmodule Wongi.Engine.Beta.Root do
       ref
     end
 
-    def parent_ref(_), do: nil
+    def parent_refs(_), do: []
 
     def seed(%@for{}, beta, rete) do
       Beta.beta_activate(beta, Token.new(beta, [], nil), rete)
