@@ -4,7 +4,7 @@ defmodule Wongi.Engine.MixProject do
   def project do
     [
       app: :wongi_engine,
-      version: "0.9.4",
+      version: "0.9.5",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
