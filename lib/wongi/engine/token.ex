@@ -58,4 +58,8 @@ defmodule Wongi.Engine.Token do
 
   def child_of?(%__MODULE__{parents: parents}, parent),
     do: MapSet.member?(parents, parent)
+
+  def descendant_of?(%__MODULE__{parents: parents} = token, ancestor) do
+    child_of?(token, ancestor) || Enum.any?(parents, &descendant_of?(&1, ancestor))
+  end
 end

@@ -4,6 +4,7 @@ defmodule Wongi.Engine.Overlay do
   alias Wongi.Engine.Beta
   alias Wongi.Engine.Overlay.GenerationTracker
   alias Wongi.Engine.Overlay.JoinResults
+  alias Wongi.Engine.Token
   alias Wongi.Engine.WME
 
   @type t() :: %__MODULE__{}
@@ -13,7 +14,9 @@ defmodule Wongi.Engine.Overlay do
     :manual,
     :tokens,
     :neg_join_results,
-    :generation_tracker
+    :generation_tracker,
+    :ncc_tokens,
+    :ncc_owners
   ]
 
   @index_patterns [
@@ -35,7 +38,9 @@ defmodule Wongi.Engine.Overlay do
       manual: MapSet.new(),
       tokens: %{},
       neg_join_results: JoinResults.new(),
-      generation_tracker: GenerationTracker.new()
+      generation_tracker: GenerationTracker.new(),
+      ncc_tokens: %{},
+      ncc_owners: %{}
     }
   end
 
@@ -120,6 +125,7 @@ defmodule Wongi.Engine.Overlay do
         |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
         |> remove_neg_join_result(token)
         |> remove_generator(token)
+        |> remove_ncc(token)
 
       :error ->
         overlay
@@ -191,6 +197,84 @@ defmodule Wongi.Engine.Overlay do
 
   def has_manual?(%__MODULE__{manual: manual}, wme) do
     MapSet.member?(manual, wme)
+  end
+
+  def add_ncc_token(
+        %__MODULE__{ncc_tokens: ncc_tokens, ncc_owners: ncc_owners} = overlay,
+        %Token{ref: ref} = token,
+        ncc_token
+      ) do
+    tokens =
+      case ncc_tokens do
+        %{^ref => tokens} -> MapSet.put(tokens, ncc_token)
+        _ -> MapSet.new([ncc_token])
+      end
+
+    ncc_tokens = Map.put(ncc_tokens, token.ref, tokens)
+    ncc_owners = Map.put(ncc_owners, ncc_token.ref, token)
+    %__MODULE__{overlay | ncc_tokens: ncc_tokens, ncc_owners: ncc_owners}
+  end
+
+  def ncc_owner(%__MODULE__{ncc_owners: ncc_owners}, %Token{ref: ref}) do
+    Map.get(ncc_owners, ref)
+  end
+
+  def has_ncc_tokens?(%__MODULE__{ncc_tokens: ncc_tokens}, %Token{ref: ref}) do
+    case ncc_tokens do
+      %{^ref => tokens} -> !Enum.empty?(tokens)
+      _ -> false
+    end
+  end
+
+  defp remove_ncc(
+         %__MODULE__{ncc_tokens: ncc_tokens, ncc_owners: ncc_owners} = overlay,
+         token
+       ) do
+    {ncc_tokens, ncc_owners} =
+      {ncc_tokens, ncc_owners}
+      |> remove_ncc_partner_token(token)
+      |> remove_ncc_owner_token(token)
+
+    %__MODULE__{overlay | ncc_tokens: ncc_tokens, ncc_owners: ncc_owners}
+  end
+
+  defp remove_ncc_partner_token({ncc_tokens, ncc_owners}, %Token{ref: ref} = token) do
+    case ncc_owners do
+      %{^ref => %Token{ref: owner_ref}} ->
+        ncc_owners = Map.delete(ncc_owners, ref)
+
+        ncc_tokens_of_owner =
+          Map.get(ncc_tokens, owner_ref)
+          |> MapSet.delete(token)
+
+        ncc_tokens =
+          if Enum.empty?(ncc_tokens_of_owner) do
+            ncc_tokens |> Map.delete(owner_ref)
+          else
+            ncc_tokens |> Map.put(owner_ref, ncc_tokens_of_owner)
+          end
+
+        {ncc_tokens, ncc_owners}
+
+      _ ->
+        {ncc_tokens, ncc_owners}
+    end
+  end
+
+  defp remove_ncc_owner_token({ncc_tokens, ncc_owners}, %Token{ref: ref}) do
+    case ncc_tokens do
+      %{^ref => tokens} ->
+        ncc_owners =
+          Enum.reduce(tokens, ncc_owners, fn %Token{ref: partner_ref}, ncc_owners ->
+            Map.delete(ncc_owners, partner_ref)
+          end)
+
+        ncc_tokens = Map.delete(ncc_tokens, ref)
+        {ncc_tokens, ncc_owners}
+
+      _ ->
+        {ncc_tokens, ncc_owners}
+    end
   end
 
   defp put_tokens(%__MODULE__{} = overlay, node_ref, node_tokens) do

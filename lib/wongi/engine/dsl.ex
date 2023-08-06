@@ -7,6 +7,7 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.NCC
   alias Wongi.Engine.DSL.Neg
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.Var
@@ -34,6 +35,9 @@ defmodule Wongi.Engine.DSL do
 
   def neg(s, p, o), do: Neg.new(s, p, o)
   def missing(s, p, o), do: Neg.new(s, p, o)
+
+  def ncc(subchain), do: NCC.new(subchain)
+  def none(subchain), do: NCC.new(subchain)
 
   def assign(name, value), do: Assign.new(name, value)
 

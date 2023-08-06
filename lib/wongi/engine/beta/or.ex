@@ -1,5 +1,6 @@
 defmodule Wongi.Engine.Beta.Or do
   @moduledoc false
+  @type t() :: %__MODULE__{}
   defstruct [:ref, :parent_refs]
 
   def new(parent_refs) do
@@ -31,14 +32,14 @@ defmodule Wongi.Engine.Beta.Or do
     def equivalent?(_, _, _), do: false
 
     @spec alpha_activate(
-            Wongi.Engine.Beta.Filter.t(),
+            Wongi.Engine.Beta.Or.t(),
             Wongi.Engine.WME.t(),
             Wongi.Engine.Rete.t()
           ) :: no_return()
     defdelegate alpha_activate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     @spec alpha_deactivate(
-            Wongi.Engine.Beta.Filter.t(),
+            Wongi.Engine.Beta.Or.t(),
             Wongi.Engine.WME.t(),
             Wongi.Engine.Rete.t()
           ) :: no_return()

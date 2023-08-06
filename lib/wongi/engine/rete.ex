@@ -314,6 +314,22 @@ defmodule Wongi.Engine.Rete do
     |> put_productions(MapSet.put(productions, ref))
   end
 
+  def add_ncc_token(
+        %__MODULE__{overlay: overlay} = rete,
+        token,
+        ncc_token
+      ) do
+    %__MODULE__{rete | overlay: Overlay.add_ncc_token(overlay, token, ncc_token)}
+  end
+
+  def ncc_owner(%__MODULE__{overlay: overlay}, token) do
+    Overlay.ncc_owner(overlay, token)
+  end
+
+  def has_ncc_tokens?(%__MODULE__{overlay: overlay}, token) do
+    Overlay.has_ncc_tokens?(overlay, token)
+  end
+
   def productions(%__MODULE__{productions: productions}), do: productions
 
   defp put_op_queue(%__MODULE__{} = rete, op_queue) do
