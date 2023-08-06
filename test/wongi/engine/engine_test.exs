@@ -28,7 +28,7 @@ defmodule Wongi.Engine.EngineTest do
     end
   end
 
-  describe "retract/2" do
+  describe "retract/4" do
     test "removes the WME from storage", %{rete: rete} do
       rete =
         rete
@@ -39,13 +39,13 @@ defmodule Wongi.Engine.EngineTest do
     end
   end
 
-  describe "find/2" do
+  describe "select/4" do
     test "retrieves after asserting", %{rete: rete} do
       rete =
         rete
         |> assert(:a, :b, :c)
 
-      assert [WME.new(:a, :b, :c)] == find(rete, :a, :b, :c) |> Enum.to_list()
+      assert [WME.new(:a, :b, :c)] == select(rete, :a, :b, :c) |> Enum.to_list()
     end
 
     test "does not retrieve after retracting", %{rete: rete} do
@@ -54,7 +54,7 @@ defmodule Wongi.Engine.EngineTest do
         |> assert(:a, :b, :c)
         |> retract(:a, :b, :c)
 
-      assert [] == find(rete, :a, :b, :c) |> Enum.to_list()
+      assert [] == select(rete, :a, :b, :c) |> Enum.to_list()
     end
 
     test "retrieves by template after asserting", %{rete: rete} do
@@ -64,18 +64,18 @@ defmodule Wongi.Engine.EngineTest do
         |> assert(:a, :b, :d)
 
       assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
-               find(rete, :a, :_, :_) |> Enum.to_list()
+               select(rete, :a, :_, :_) |> Enum.to_list()
 
       assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
-               find(rete, :_, :b, :_) |> Enum.to_list()
+               select(rete, :_, :b, :_) |> Enum.to_list()
 
-      assert [WME.new(:a, :b, :c)] == find(rete, :_, :_, :c) |> Enum.to_list()
+      assert [WME.new(:a, :b, :c)] == select(rete, :_, :_, :c) |> Enum.to_list()
 
       assert [WME.new(:a, :b, :c), WME.new(:a, :b, :d)] ==
-               find(rete, :a, :b, :_) |> Enum.to_list()
+               select(rete, :a, :b, :_) |> Enum.to_list()
 
-      assert [WME.new(:a, :b, :c)] == find(rete, :a, :_, :c) |> Enum.to_list()
-      assert [WME.new(:a, :b, :c)] == find(rete, :_, :b, :c) |> Enum.to_list()
+      assert [WME.new(:a, :b, :c)] == select(rete, :a, :_, :c) |> Enum.to_list()
+      assert [WME.new(:a, :b, :c)] == select(rete, :_, :b, :c) |> Enum.to_list()
     end
 
     test "does not retrieve by template after retracting", %{rete: rete} do
@@ -86,12 +86,12 @@ defmodule Wongi.Engine.EngineTest do
         |> retract(:a, :b, :c)
         |> retract(:a, :b, :d)
 
-      assert [] == find(rete, :a, :_, :_) |> Enum.to_list()
-      assert [] == find(rete, :_, :b, :_) |> Enum.to_list()
-      assert [] == find(rete, :_, :_, :c) |> Enum.to_list()
-      assert [] == find(rete, :a, :b, :_) |> Enum.to_list()
-      assert [] == find(rete, :a, :_, :c) |> Enum.to_list()
-      assert [] == find(rete, :_, :b, :c) |> Enum.to_list()
+      assert [] == select(rete, :a, :_, :_) |> Enum.to_list()
+      assert [] == select(rete, :_, :b, :_) |> Enum.to_list()
+      assert [] == select(rete, :_, :_, :c) |> Enum.to_list()
+      assert [] == select(rete, :a, :b, :_) |> Enum.to_list()
+      assert [] == select(rete, :a, :_, :c) |> Enum.to_list()
+      assert [] == select(rete, :_, :b, :c) |> Enum.to_list()
     end
   end
 end

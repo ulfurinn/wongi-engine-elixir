@@ -89,7 +89,7 @@ defmodule Wongi.Engine.Beta.Join do
     end
 
     def seed(%@for{template: template} = join, beta, rete) do
-      wmes = Rete.find(rete, template)
+      wmes = Rete.select(rete, template)
       tokens = Rete.tokens(rete, join)
 
       Enum.reduce(wmes, rete, fn wme, rete ->
@@ -128,7 +128,7 @@ defmodule Wongi.Engine.Beta.Join do
       # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
       betas = Rete.beta_subscriptions(rete, join)
-      wmes = Rete.find(rete, @for.specialize(join, token))
+      wmes = Rete.select(rete, @for.specialize(join, token))
 
       Enum.reduce(wmes, rete, &propagate_matching(join, token, &1, betas, &2))
     end

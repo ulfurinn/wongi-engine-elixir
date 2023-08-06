@@ -12,14 +12,14 @@ defmodule Wongi.Engine.GenerateTest do
       )
 
     asserted = clean |> assert(:a, :b, :c) |> assert(:c, :d, :e)
-    assert [_] = find(asserted, :c, :d, :e) |> Enum.to_list()
+    assert [_] = select(asserted, :c, :d, :e) |> Enum.to_list()
 
     retracted =
       asserted
       |> retract(:a, :b, :c)
       |> retract(:c, :d, :e)
 
-    assert [] = find(retracted, :c, :d, :e) |> Enum.to_list()
+    assert [] = select(retracted, :c, :d, :e) |> Enum.to_list()
 
     assert clean.overlay == retracted.overlay
   end
@@ -41,14 +41,14 @@ defmodule Wongi.Engine.GenerateTest do
       |> assert(:friend, :symmetric, true)
       |> assert(:alice, :friend, :bob)
 
-    assert 3 = rete |> find(:_, :_, :_) |> Enum.count()
-    assert [_] = rete |> find(:bob, :friend, :alice) |> Enum.to_list()
+    assert 3 = rete |> select(:_, :_, :_) |> Enum.count()
+    assert [_] = rete |> select(:bob, :friend, :alice) |> Enum.to_list()
 
     rete =
       rete
       |> retract(:alice, :friend, :bob)
 
-    assert 1 = rete |> find(:_, :_, :_) |> Enum.count()
+    assert 1 = rete |> select(:_, :_, :_) |> Enum.count()
   end
 
   test "generates reflexive facts" do
@@ -69,15 +69,15 @@ defmodule Wongi.Engine.GenerateTest do
       |> assert(:p, :reflexive, true)
       |> assert(:x, :p, :y)
 
-    assert 4 = rete |> find(:_, :_, :_) |> Enum.count()
-    assert [_] = rete |> find(:x, :p, :x) |> Enum.to_list()
-    assert [_] = rete |> find(:y, :p, :y) |> Enum.to_list()
+    assert 4 = rete |> select(:_, :_, :_) |> Enum.count()
+    assert [_] = rete |> select(:x, :p, :x) |> Enum.to_list()
+    assert [_] = rete |> select(:y, :p, :y) |> Enum.to_list()
 
     rete =
       rete
       |> retract(:x, :p, :y)
 
-    assert 1 = rete |> find(:_, :_, :_) |> Enum.count()
+    assert 1 = rete |> select(:_, :_, :_) |> Enum.count()
   end
 
   test "generates and cleans up transitive facts" do
@@ -102,28 +102,28 @@ defmodule Wongi.Engine.GenerateTest do
       |> assert(:alice, :relative, :bob)
       |> assert(:bob, :relative, :charlie)
 
-    assert [_] = find(rete_with_facts, :alice, :relative, :charlie) |> Enum.to_list()
+    assert [_] = select(rete_with_facts, :alice, :relative, :charlie) |> Enum.to_list()
     assert [_] = tokens(rete_with_facts, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:relative, :transitive, true)
 
-    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
+    assert [] = select(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:alice, :relative, :bob)
 
-    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
+    assert [] = select(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_one_fact_removed =
       rete_with_facts
       |> retract(:bob, :relative, :charlie)
 
-    assert [] = find(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
+    assert [] = select(rete_with_one_fact_removed, :alice, :relative, :charlie) |> Enum.to_list()
     assert [] = tokens(rete_with_one_fact_removed, ref) |> Enum.to_list()
 
     rete_with_all_removed =
@@ -162,15 +162,15 @@ defmodule Wongi.Engine.GenerateTest do
       |> assert(:alice, :relative, :claire)
       |> assert(:claire, :relative, :dwight)
 
-    assert [_] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert [_] = rete |> select(:alice, :relative, :dwight) |> Enum.to_list()
     assert 2 = rete |> tokens(ref) |> Enum.count()
 
     rete = rete |> retract(:claire, :relative, :dwight)
-    assert [_] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert [_] = rete |> select(:alice, :relative, :dwight) |> Enum.to_list()
     assert 1 = rete |> tokens(ref) |> Enum.count()
 
     rete = rete |> retract(:alice, :relative, :bob)
-    assert [] = rete |> find(:alice, :relative, :dwight) |> Enum.to_list()
+    assert [] = rete |> select(:alice, :relative, :dwight) |> Enum.to_list()
     assert 0 = rete |> tokens(ref) |> Enum.count()
 
     rete =

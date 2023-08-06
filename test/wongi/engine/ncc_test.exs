@@ -139,7 +139,7 @@ defmodule Wongi.Engine.NCCTest do
   end
 
   defp get(rete, s, p, o) do
-    [wme] = rete |> find(s, p, o) |> Enum.to_list()
+    [wme] = rete |> select(s, p, o) |> Enum.to_list()
     wme
   end
 end

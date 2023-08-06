@@ -53,12 +53,12 @@ defmodule Wongi.Engine do
   defdelegate retract(rete, subject, object, predicate), to: Rete
 
   @doc "Returns a set of all facts matching the given template."
-  @spec find(t(), template()) :: MapSet.t()
-  defdelegate find(rete, template), to: Rete
+  @spec select(t(), template()) :: MapSet.t()
+  defdelegate select(rete, template), to: Rete
 
   @doc "Returns a set of all facts matching the given template."
-  @spec find(t(), any(), any(), any()) :: MapSet.t()
-  defdelegate find(rete, subject, predicate, object), to: Rete
+  @spec select(t(), any(), any(), any()) :: MapSet.t()
+  defdelegate select(rete, subject, predicate, object), to: Rete
 
   @doc "Returns a set of all tokens for the given production node reference."
   defdelegate tokens(rete, node), to: Rete

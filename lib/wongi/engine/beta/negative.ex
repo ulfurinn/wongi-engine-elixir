@@ -79,7 +79,7 @@ defmodule Wongi.Engine.Beta.Negative do
 
     def seed(%@for{template: template} = neg, beta, rete) do
       tokens = Rete.tokens(rete, neg)
-      wmes = Rete.find(rete, template)
+      wmes = Rete.select(rete, template)
 
       rete =
         Enum.reduce(tokens, rete, fn token, rete ->
@@ -150,7 +150,7 @@ defmodule Wongi.Engine.Beta.Negative do
       # return early if already has a duplicate token?
       # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
-      wmes = Rete.find(rete, @for.specialize(neg, token))
+      wmes = Rete.select(rete, @for.specialize(neg, token))
 
       rete =
         Enum.reduce(wmes, rete, fn wme, rete ->

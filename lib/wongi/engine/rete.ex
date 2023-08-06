@@ -94,7 +94,7 @@ defmodule Wongi.Engine.Rete do
   def retract(rete, s, p, o, generator),
     do: retract(rete, WME.new(s, p, o), generator)
 
-  def find(%__MODULE__{overlay: overlay}, %WME{} = wme) when not template?(wme) do
+  def select(%__MODULE__{overlay: overlay}, %WME{} = wme) when not template?(wme) do
     if Overlay.has_wme?(overlay, wme) do
       MapSet.new([wme])
     else
@@ -102,21 +102,21 @@ defmodule Wongi.Engine.Rete do
     end
   end
 
-  def find(%__MODULE__{overlay: overlay}, %WME{} = wme) when root?(wme) do
+  def select(%__MODULE__{overlay: overlay}, %WME{} = wme) when root?(wme) do
     overlay
     |> Overlay.wmes()
   end
 
-  def find(%__MODULE__{overlay: overlay}, %WME{} = wme) do
+  def select(%__MODULE__{overlay: overlay}, %WME{} = wme) do
     overlay
     |> Overlay.matching(wme)
   end
 
-  def find(rete, {s, p, o}),
-    do: find(rete, WME.new(s, p, o))
+  def select(rete, {s, p, o}),
+    do: select(rete, WME.new(s, p, o))
 
-  def find(rete, s, p, o),
-    do: find(rete, WME.new(s, p, o))
+  def select(rete, s, p, o),
+    do: select(rete, WME.new(s, p, o))
 
   def subscribe_to_alpha(
         %__MODULE__{alpha_subscriptions: alpha_subscriptions} = rete,
