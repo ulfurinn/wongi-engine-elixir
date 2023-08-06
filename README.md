@@ -1,6 +1,7 @@
 # Wongi.Engine
 
 [![Build Status](https://github.com/ulfurinn/wongi-engine-elixir/actions/workflows/test.yml/badge.svg)](https://github.com/ulfurinn/wongi-engine-elixir/actions/workflows/test.yml)
+[![hex.pm](https://img.shields.io/hexpm/v/wongi_engine)](https://hex.pm/packages/wongi_engine)
 
 This is a pure-Elixir forward-chaining rule engine based on the classic [Rete algorithm](http://en.wikipedia.org/wiki/Rete_algorithm).
 
