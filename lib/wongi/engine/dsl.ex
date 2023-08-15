@@ -3,6 +3,7 @@ defmodule Wongi.Engine.DSL do
   Rule definition functions.
   """
   alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Aggregate
   alias Wongi.Engine.DSL.Any
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
@@ -50,6 +51,8 @@ defmodule Wongi.Engine.DSL do
   def in_list(a, b), do: Filter.new(InList.new(a, b))
   def not_in_list(a, b), do: Filter.new(NotInList.new(a, b))
   def filter(func), do: Filter.new(Function.new(func))
+
+  def aggregate(fun, var, opts), do: Aggregate.new(fun, var, opts)
 
   def var(name), do: Var.new(name)
 
