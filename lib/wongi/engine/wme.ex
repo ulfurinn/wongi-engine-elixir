@@ -1,12 +1,12 @@
 defmodule Wongi.Engine.WME do
-  @moduledoc """
-  A single fact in the form of `{subject, predicate, object}`.
-
-  "Working Memory Element" in classic Rete terminology.
-  """
+  @moduledoc false
   alias Wongi.Engine.DSL.Var
 
-  @type t() :: %__MODULE__{}
+  @type t() :: %__MODULE__{
+          subject: any(),
+          predicate: any(),
+          object: any()
+        }
 
   defstruct [:subject, :predicate, :object]
 

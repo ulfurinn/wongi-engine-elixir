@@ -1,9 +1,5 @@
 defmodule Wongi.Engine.Rete do
-  @moduledoc """
-  The Rete network.
-
-  `Wongi.Engine` is the public API. Avoid calling this module directly.
-  """
+  @moduledoc false
   import Wongi.Engine.WME, only: [root?: 1, template?: 1]
 
   alias Wongi.Engine.Beta
@@ -273,6 +269,7 @@ defmodule Wongi.Engine.Rete do
     Map.get(beta_subscriptions, Beta.ref(node), [])
   end
 
+  @doc false
   @spec add_token(Wongi.Engine.Rete.t(), Wongi.Engine.Token.t()) ::
           Wongi.Engine.Rete.t()
   def add_token(%__MODULE__{overlay: overlay} = rete, token) do

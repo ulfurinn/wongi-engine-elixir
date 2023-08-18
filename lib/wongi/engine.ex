@@ -8,10 +8,11 @@ defmodule Wongi.Engine do
   alias Wongi.Engine.Entity
   alias Wongi.Engine.Rete
 
-  @type t() :: Rete.t()
-  @type fact() :: {any(), any(), any()} | Wongi.Engine.WME.t()
-  @type template() :: {any(), any(), any()} | Wongi.Engine.WME.t()
-  @type rule() :: Wongi.Engine.DSL.Rule.t()
+  @opaque t() :: Wongi.Engine.Rete.t()
+  @opaque wme() :: Wongi.Engine.WME.t()
+  @type fact() :: {any(), any(), any()} | wme()
+  @type template() :: {any(), any(), any()} | wme()
+  @opaque rule() :: Wongi.Engine.DSL.Rule.t()
 
   @doc """
   Creates a new engine instance.
@@ -54,16 +55,19 @@ defmodule Wongi.Engine do
   defdelegate retract(rete, subject, object, predicate), to: Rete
 
   @doc "Returns a set of all facts matching the given template."
-  @spec select(t(), template()) :: MapSet.t()
+  @spec select(t(), template()) :: MapSet.t(fact())
   defdelegate select(rete, template), to: Rete
 
   @doc "Returns a set of all facts matching the given template."
-  @spec select(t(), any(), any(), any()) :: MapSet.t()
+  @spec select(t(), any(), any(), any()) :: MapSet.t(fact())
   defdelegate select(rete, subject, predicate, object), to: Rete
 
   @doc "Returns a set of all tokens for the given production node reference."
+  @spec tokens(t(), reference()) :: MapSet.t(Wongi.Engine.Token.t())
   defdelegate tokens(rete, node), to: Rete
+
   @doc "Returns all production node references."
+  @spec productions(t()) :: MapSet.t(reference())
   defdelegate productions(rete), to: Rete
 
   def entity(rete, subject), do: Entity.new(rete, subject)

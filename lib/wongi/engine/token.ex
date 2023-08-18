@@ -4,12 +4,15 @@ defmodule Wongi.Engine.Token do
   An intermediate data structure representing a partial match.
   """
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.WME
 
   @type t() :: %__MODULE__{}
 
   @derive Inspect
   defstruct [:ref, :node_ref, :parents, :wme, :assignments]
 
+  @spec new(any(), list(t()), WME.t() | nil, map()) :: t()
+  @doc false
   def new(node, parents, wme, assignments \\ %{}) do
     %__MODULE__{
       ref: make_ref(),
@@ -20,6 +23,8 @@ defmodule Wongi.Engine.Token do
     }
   end
 
+  @doc "Returns the value of a bound variable."
+  @spec fetch(t(), atom()) :: {:ok, any()} | :error
   def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) do
     case Map.fetch(assignments, var) do
       {:ok, _value} = ok ->
@@ -35,6 +40,7 @@ defmodule Wongi.Engine.Token do
     end
   end
 
+  @doc false
   def fetch(
         %__MODULE__{} = token,
         var,
@@ -49,19 +55,24 @@ defmodule Wongi.Engine.Token do
     end
   end
 
+  @doc false
   def has_wme?(%__MODULE__{wme: wme}, wme), do: true
   def has_wme?(_, _), do: false
 
+  @doc false
   def ancestral_wme?(%__MODULE__{wme: token_wme, parents: parents}, wme) do
     token_wme == wme || Enum.any?(parents, &ancestral_wme?(&1, wme))
   end
 
+  @doc false
   def child_of?(%__MODULE__{parents: parents}, parent),
     do: MapSet.member?(parents, parent)
 
+  @doc false
   def child_of_any?(%__MODULE__{} = token, parents),
     do: Enum.any?(parents, &child_of?(token, &1))
 
+  @doc false
   def descendant_of?(%__MODULE__{parents: parents} = token, ancestor) do
     child_of?(token, ancestor) || Enum.any?(parents, &descendant_of?(&1, ancestor))
   end

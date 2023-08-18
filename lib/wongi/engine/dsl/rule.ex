@@ -1,10 +1,9 @@
 defmodule Wongi.Engine.DSL.Rule do
-  @moduledoc """
-  A structure holding a rule definition.
-  """
+  @moduledoc false
   @type t() :: %__MODULE__{}
   defstruct [:ref, :name, :forall, :actions]
 
+  @doc false
   def new(name, forall, actions) do
     %__MODULE__{
       ref: make_ref(),

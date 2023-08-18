@@ -22,7 +22,9 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.Filter.LTE
   alias Wongi.Engine.Filter.NotInList
 
-  @spec rule(atom(), keyword) :: Rule.t()
+  @opaque rule() :: Rule.t()
+
+  @spec rule(atom(), keyword) :: rule()
   def rule(name \\ nil, opts) do
     Rule.new(
       name,

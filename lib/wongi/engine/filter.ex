@@ -1,4 +1,5 @@
 defprotocol Wongi.Engine.Filter do
+  @moduledoc false
   @spec pass?(t, Wongi.Engine.Token.t()) :: boolean()
   def pass?(filter, token)
 end
