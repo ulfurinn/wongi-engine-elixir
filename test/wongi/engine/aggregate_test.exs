@@ -96,6 +96,27 @@ defmodule Wongi.Engine.AggregateTest do
     assert 2 = token[:count]
   end
 
+  test "calculates the sum" do
+    {rete, ref} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(:_, :weight, var(:weight)),
+            aggregate(&Aggregates.sum/1, :sum, over: :weight)
+          ]
+        )
+      )
+
+    rete = rete |> assert(:pea, :weight, 2)
+    assert [token] = rete |> tokens(ref) |> Enum.to_list()
+    assert 2 = token[:sum]
+
+    rete = rete |> assert(:apple, :weight, 5)
+    assert [token] = rete |> tokens(ref) |> Enum.to_list()
+    assert 7 = token[:sum]
+  end
+
   test "partitions by a single var" do
     {rete, ref} =
       new()

@@ -9,7 +9,7 @@ defmodule Wongi.Engine.Aggregates do
   end
 
   def sum(enum) do
-    Enum.reduce(enum, 1, &+/2)
+    Enum.reduce(enum, 0, &+/2)
   end
 
   def product(enum) do
