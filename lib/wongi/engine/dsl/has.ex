@@ -1,9 +1,12 @@
 # credo:disable-for-this-file Credo.Check.Refactor.Nesting
 defmodule Wongi.Engine.DSL.Has do
-  @moduledoc false
+  @moduledoc "Positive assertion."
   alias Wongi.Engine.DSL
   defstruct [:subject, :predicate, :object, :filters]
 
+  @type option() :: {:when, list(Wongi.Engine.Filter.t())}
+
+  @doc false
   def new(subject, predicate, object, opts \\ []) do
     %__MODULE__{
       subject: subject,

@@ -1,5 +1,5 @@
 defprotocol Wongi.Engine.Filter do
-  @moduledoc false
+  @moduledoc "Filters tokens based on a predicate."
   @spec pass?(t, Wongi.Engine.Token.t()) :: boolean()
   def pass?(filter, token)
 end
