@@ -5,6 +5,7 @@ defmodule Wongi.Engine do
   A port of the Ruby library with the same name.
   """
 
+  alias Wongi.Engine.Entity
   alias Wongi.Engine.Rete
 
   @type t() :: Rete.t()
@@ -64,4 +65,6 @@ defmodule Wongi.Engine do
   defdelegate tokens(rete, node), to: Rete
   @doc "Returns all production node references."
   defdelegate productions(rete), to: Rete
+
+  def entity(rete, subject), do: Entity.new(rete, subject)
 end
