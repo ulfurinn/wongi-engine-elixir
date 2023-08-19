@@ -57,7 +57,7 @@ defmodule Wongi.Engine do
   ### Searching
 
   `select/2` and `select/4` can be used to return a set of facts matching a
-  template. A template is a triple where one or more elements are a special
+  template. A template is a triple where some of the elements can be the special
   placeholder value `:_`.
 
   An enumerable of all facts matching the template is returned:
