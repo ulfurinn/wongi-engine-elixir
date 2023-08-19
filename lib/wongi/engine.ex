@@ -48,7 +48,7 @@ defmodule Wongi.Engine do
   engine = engine |> assert(WME.new(:earth, :satellite, :moon))
   ```
 
-  WME (working memory element)  is standard Rete term for "fact". You would
+  WME (working memory element) is the standard Rete term for "fact". You would
   rarely need to construct `Wongi.Engine.WME` instances by hand, but you might
   retrieve them from the engine and use in further function calls.
 
