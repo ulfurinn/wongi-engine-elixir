@@ -4,8 +4,9 @@ defmodule Wongi.TestCase do
 
   using do
     quote do
+      use Wongi.Engine.DSL
+
       import Wongi.Engine
-      import Wongi.Engine.DSL
 
       alias Wongi.Engine
       alias Wongi.Engine.Token

@@ -1,8 +1,6 @@
 defmodule Wongi.Engine.AggregateTest do
   use Wongi.TestCase
 
-  alias Wongi.Engine.Aggregates
-
   describe "min" do
     test "calculates the minimum" do
       {rete, ref} =
@@ -11,7 +9,7 @@ defmodule Wongi.Engine.AggregateTest do
           rule(
             forall: [
               has(:_, :weight, var(:weight)),
-              aggregate(&Aggregates.min/1, :x, over: :weight),
+              aggregate(&min/1, :x, over: :weight),
               has(var(:fruit), :weight, var(:x))
             ]
           )
@@ -46,7 +44,7 @@ defmodule Wongi.Engine.AggregateTest do
           rule(
             forall: [
               has(:_, :weight, var(:weight)),
-              aggregate(&Aggregates.max/1, :x, over: :weight),
+              aggregate(&max/1, :x, over: :weight),
               has(var(:fruit), :weight, var(:x))
             ]
           )
@@ -103,7 +101,7 @@ defmodule Wongi.Engine.AggregateTest do
         rule(
           forall: [
             has(:_, :weight, var(:weight)),
-            aggregate(&Aggregates.sum/1, :sum, over: :weight)
+            aggregate(&sum/1, :sum, over: :weight)
           ]
         )
       )
@@ -124,7 +122,7 @@ defmodule Wongi.Engine.AggregateTest do
         rule(
           forall: [
             has(:factor, var(:number), var(:factor)),
-            aggregate(&Aggregates.product/1, :product, over: :factor, partition: :number)
+            aggregate(&product/1, :product, over: :factor, partition: :number)
           ]
         )
       )
@@ -148,7 +146,7 @@ defmodule Wongi.Engine.AggregateTest do
         rule(
           forall: [
             has(:factor, var(:number), var(:factor)),
-            aggregate(&Aggregates.product/1, :product, over: :factor, partition: [:number])
+            aggregate(&product/1, :product, over: :factor, partition: [:number])
           ]
         )
       )

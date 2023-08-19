@@ -27,6 +27,13 @@ defmodule Wongi.Engine.DSL do
   @type matcher() :: Wongi.Engine.DSL.Clause.t()
   @type action() :: any()
 
+  defmacro __using__(_) do
+    quote do
+      import Wongi.Engine.DSL
+      import Wongi.Engine.Aggregates
+    end
+  end
+
   @spec rule(atom(), list(rule_option())) :: rule()
   def rule(name \\ nil, opts) do
     Rule.new(
