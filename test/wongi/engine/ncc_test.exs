@@ -50,7 +50,7 @@ defmodule Wongi.Engine.NCCTest do
     assert initial == rete
   end
 
-  test "complex example" do
+  test "complex example 1" do
     rete =
       new()
       |> compile(
@@ -136,6 +136,59 @@ defmodule Wongi.Engine.NCCTest do
       |> retract(:user, :light_bathroom, false)
 
     assert initial == rete
+  end
+
+  test "complex example 2" do
+    rete =
+      new()
+      |> compile(
+        rule(
+          forall: [
+            has(var(:student), :is, :student),
+            has(var(:course), :is, :course),
+            ncc([
+              has(var(:requirement), :is, :requirement),
+              has(var(:course), var(:requirement), var(:required_grade)),
+              any([
+                [
+                  # has not taken the exam at all
+                  neg(var(:student), var(:requirement), :_)
+                ],
+                [
+                  # taken but failed
+                  has(var(:student), var(:requirement), var(:received_grade)),
+                  less(var(:received_grade), var(:required_grade))
+                ]
+              ])
+            ])
+          ],
+          do: [
+            gen(var(:student), :passes_for, var(:course))
+          ]
+        )
+      )
+      |> assert(:math, :is, :requirement)
+      |> assert(:science, :is, :requirement)
+      |> assert(:english, :is, :requirement)
+      |> assert(:bio, :is, :requirement)
+      |> assert(A, :is, :course)
+      |> assert(B, :is, :course)
+      |> assert(C, :is, :course)
+      |> assert(S, :is, :student)
+      |> assert(A, :math, 50)
+      |> assert(A, :science, 50)
+      |> assert(B, :math, 50)
+      |> assert(B, :english, 50)
+      |> assert(C, :math, 50)
+      |> assert(C, :bio, 50)
+      |> assert(S, :math, 60)
+      |> assert(S, :science, 60)
+      |> assert(S, :bio, 40)
+
+    student = entity(rete, S)
+    assert {:passes_for, A} in student
+    assert {:passes_for, B} not in student
+    assert {:passes_for, C} not in student
   end
 
   defp get(rete, s, p, o) do

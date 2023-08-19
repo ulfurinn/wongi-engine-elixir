@@ -4,7 +4,7 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
   alias Wongi.Engine.Token
 
   @type t() :: %__MODULE__{}
-  defstruct [:ref, :parent_ref, :ncc_ref, :divergent_ref]
+  defstruct [:ref, :parent_ref, :ncc_ref]
 
   def owner_for(%__MODULE__{ncc_ref: ncc}, ncc_token, rete) do
     rete
@@ -13,10 +13,7 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
   end
 
   def owner_token?(token, ncc_token) do
-    # the token will always have one direct ancestor, and it will belong to
-    # the divergent node; so the ncc token's lineage must include that divergent ancestor
-    [divergent_ancestor] = Enum.to_list(token.parents)
-    Token.descendant_of?(ncc_token, divergent_ancestor)
+    Token.lineage_of?(ncc_token, token)
   end
 
   defimpl Wongi.Engine.Beta do

@@ -11,14 +11,12 @@ defmodule Wongi.Engine.DSL.NCC do
     alias Wongi.Engine.DSL.Clause
 
     def compile(%@for{subchain: subchain}, context) do
-      divergent_ref = context.node_ref
-
       subchain_context =
         Enum.reduce(subchain, context, fn clause, context ->
           Clause.compile(clause, context)
         end)
 
-      {node, partner} = NCC.new_pair(context.node_ref, subchain_context.node_ref, divergent_ref)
+      {node, partner} = NCC.new_pair(context.node_ref, subchain_context.node_ref)
 
       %Compiler{rete: rete} = advance(subchain_context, partner)
 

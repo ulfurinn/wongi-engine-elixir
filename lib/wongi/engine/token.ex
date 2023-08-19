@@ -73,7 +73,19 @@ defmodule Wongi.Engine.Token do
     do: Enum.any?(parents, &child_of?(token, &1))
 
   @doc false
-  def descendant_of?(%__MODULE__{parents: parents} = token, ancestor) do
-    child_of?(token, ancestor) || Enum.any?(parents, &descendant_of?(&1, ancestor))
+  # TODO: sort out token ownership to make this more straighforward; it is a bit
+  # confusing that the token's owner node is one level deeper than you
+  # intuitively think, and it makes NCC owner tracking difficult to reason about
+  def lineage_of?(%__MODULE__{parents: parents} = token, other) do
+    duplicate?(token, other) || Enum.any?(parents, &lineage_of?(&1, other))
+  end
+
+  defp duplicate?(token, other) do
+    token.wme == other.wme && token.assignments == other.assignments &&
+      parent_refs(token) == parent_refs(other)
+  end
+
+  defp parent_refs(%__MODULE__{parents: parents}) do
+    Enum.map(parents, & &1.ref)
   end
 end

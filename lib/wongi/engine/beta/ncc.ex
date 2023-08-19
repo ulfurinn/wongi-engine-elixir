@@ -8,7 +8,7 @@ defmodule Wongi.Engine.Beta.NCC do
   @type t() :: %__MODULE__{}
   defstruct [:ref, :parent_ref, :partner_ref]
 
-  def new_pair(main_parent_ref, subchain_parent_ref, divergent_ref) do
+  def new_pair(main_parent_ref, subchain_parent_ref) do
     main_ref = make_ref()
     partner_ref = make_ref()
 
@@ -21,8 +21,7 @@ defmodule Wongi.Engine.Beta.NCC do
     partner = %Partner{
       ref: partner_ref,
       parent_ref: subchain_parent_ref,
-      ncc_ref: main_ref,
-      divergent_ref: divergent_ref
+      ncc_ref: main_ref
     }
 
     {ncc, partner}
