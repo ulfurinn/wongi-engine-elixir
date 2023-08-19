@@ -1,6 +1,6 @@
 defmodule Wongi.Engine do
   @moduledoc """
-  This is a pure-Elixir forward changing inference engine based on the classic
+  This is a pure-Elixir forward chaining inference engine based on the classic
   Rete algorithm.
 
   It's derived from an earlier [Ruby library](ruby.md) and has a similar
