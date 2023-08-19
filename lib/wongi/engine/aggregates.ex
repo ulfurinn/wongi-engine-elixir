@@ -1,12 +1,8 @@
 defmodule Wongi.Engine.Aggregates do
   @moduledoc "Aggregate helpers."
-  def min(enum) do
-    Enum.min(enum, &<=/2, fn -> nil end)
-  end
+  defdelegate min(enum), to: Enum
 
-  def max(enum) do
-    Enum.max(enum, &>=/2, fn -> nil end)
-  end
+  defdelegate max(enum), to: Enum
 
   def sum(enum) do
     Enum.reduce(enum, 0, &+/2)
