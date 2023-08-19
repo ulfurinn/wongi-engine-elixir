@@ -1,5 +1,7 @@
 defmodule Wongi.Engine.Entity do
-  @moduledoc false
+  @moduledoc """
+  An iterator-like object that represents a set of facts about a single subject.
+  """
   alias Wongi.Engine.Rete
   defstruct [:rete, :subject]
 

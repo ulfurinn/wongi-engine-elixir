@@ -16,6 +16,8 @@ defmodule Wongi.Engine.MixProject do
       description: "A pure-Elixir rule engine.",
       source_url: "https://github.com/ulfurinn/wongi-engine-elixir",
       docs: [
+        main: "Wongi.Engine",
+        extras: ["ruby.md"],
         logo: "./wongi.png"
       ],
       aliases: aliases(),

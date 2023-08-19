@@ -1,5 +1,5 @@
 defmodule Wongi.Engine.WME do
-  @moduledoc false
+  @moduledoc "A single fact."
   alias Wongi.Engine.DSL.Var
 
   @type t() :: %__MODULE__{
