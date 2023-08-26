@@ -135,6 +135,13 @@ defmodule Wongi.Engine.DSL do
   def filter(func), do: Filter.new(Function.new(func))
 
   @doc """
+  A filter that passes if the value is a unary function that returns true.
+
+  The function will receive the variable as its argument.
+  """
+  def filter(var, func), do: Filter.new(Function.new(var, func))
+
+  @doc """
   A matcher that computes some value across all its incoming tokens, across all
   execution paths.
 

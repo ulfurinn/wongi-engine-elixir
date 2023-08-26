@@ -8,7 +8,7 @@ defmodule Wongi.Engine.Filter.FunctionTest do
         rule(
           forall: [
             has(:a, :b, var(:x)),
-            filter(&__MODULE__.true?/1)
+            filter(&__MODULE__.x_is_true?/1)
           ]
         )
       )
@@ -24,7 +24,7 @@ defmodule Wongi.Engine.Filter.FunctionTest do
         rule(
           forall: [
             has(:a, :b, var(:x)),
-            filter(&__MODULE__.true?/1)
+            filter(&__MODULE__.x_is_true?/1)
           ]
         )
       )
@@ -33,5 +33,24 @@ defmodule Wongi.Engine.Filter.FunctionTest do
     assert [] = tokens(rete, ref) |> Enum.to_list()
   end
 
-  def true?(token), do: token[:x]
+  test "accepts a single variable" do
+    {rete, ref} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(:a, :b, var(:x)),
+            filter(:x, &__MODULE__.true?/1)
+          ]
+        )
+      )
+
+    rete = rete |> assert(:a, :b, false)
+    assert [] = tokens(rete, ref) |> Enum.to_list()
+  end
+
+  def x_is_true?(token), do: token[:x]
+
+  def true?(true), do: true
+  def true?(false), do: false
 end
