@@ -23,7 +23,8 @@ defmodule Wongi.Engine.Filter.FunctionTest do
       |> compile_and_get_ref(
         rule(
           forall: [
-            diff(1, 1)
+            has(:a, :b, var(:x)),
+            filter(&__MODULE__.true?/1)
           ]
         )
       )
