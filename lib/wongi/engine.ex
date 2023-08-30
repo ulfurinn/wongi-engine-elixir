@@ -194,11 +194,11 @@ defmodule Wongi.Engine do
   alias Wongi.Engine.Entity
   alias Wongi.Engine.Rete
 
-  @opaque t() :: Wongi.Engine.Rete.t()
-  @opaque wme() :: Wongi.Engine.WME.t()
+  @type t() :: Wongi.Engine.Rete.t()
+  @type wme() :: Wongi.Engine.WME.t()
   @type fact() :: {any(), any(), any()} | wme()
   @type template() :: {any(), any(), any()} | wme()
-  @opaque rule() :: Wongi.Engine.DSL.Rule.t()
+  @type rule() :: Wongi.Engine.DSL.Rule.t()
 
   @doc """
   Creates a new engine instance.
