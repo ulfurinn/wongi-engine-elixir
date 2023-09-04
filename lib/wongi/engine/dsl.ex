@@ -22,7 +22,7 @@ defmodule Wongi.Engine.DSL do
   alias Wongi.Engine.Filter.LTE
   alias Wongi.Engine.Filter.NotInList
 
-  @opaque rule() :: Rule.t()
+  @type rule() :: Rule.t()
   @type rule_option :: {:forall, list(matcher())} | {:do, list(action())}
   @type matcher() :: Wongi.Engine.DSL.Clause.t()
   @type action() :: any()
