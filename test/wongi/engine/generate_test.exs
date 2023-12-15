@@ -21,7 +21,7 @@ defmodule Wongi.Engine.GenerateTest do
 
     assert [] = select(retracted, :c, :d, :e) |> Enum.to_list()
 
-    assert clean.overlay == retracted.overlay
+    assert clean == retracted
   end
 
   test "generates symmetric facts" do
@@ -133,7 +133,7 @@ defmodule Wongi.Engine.GenerateTest do
       |> retract(:bob, :relative, :charlie)
 
     # make sure there are no internal resource leaks
-    assert clean_rete.overlay == rete_with_all_removed.overlay
+    assert clean_rete == rete_with_all_removed
   end
 
   test "handles a transitive diamond" do

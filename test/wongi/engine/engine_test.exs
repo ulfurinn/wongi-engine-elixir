@@ -13,7 +13,7 @@ defmodule Wongi.Engine.EngineTest do
         rete
         |> assert(:a, :b, :c)
 
-      assert %{overlay: %{wmes: %{map: %{^wme => _}}}} = rete
+      assert %{wmes: %{map: %{^wme => _}}} = rete
     end
   end
 
@@ -24,7 +24,7 @@ defmodule Wongi.Engine.EngineTest do
         |> assert(:a, :b, :c)
 
       wme = WME.new(:a, :b, :c)
-      assert %{overlay: %{wmes: %{map: %{^wme => _}}}} = rete
+      assert %{wmes: %{map: %{^wme => _}}} = rete
     end
   end
 
@@ -35,7 +35,7 @@ defmodule Wongi.Engine.EngineTest do
         |> assert(:a, :b, :c)
         |> retract(:a, :b, :c)
 
-      assert %{overlay: %{wmes: %{map: %{}}}} = rete
+      assert %{wmes: %{map: %{}}} = rete
     end
   end
 

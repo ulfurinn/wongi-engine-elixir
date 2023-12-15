@@ -1,4 +1,4 @@
-defmodule Wongi.Engine.Overlay.JoinResults do
+defmodule Wongi.Engine.JoinResults do
   @moduledoc false
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME

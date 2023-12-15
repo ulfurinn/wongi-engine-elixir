@@ -1,4 +1,4 @@
-defmodule Wongi.Engine.Overlay.GenerationTracker do
+defmodule Wongi.Engine.GenerationTracker do
   @moduledoc false
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
