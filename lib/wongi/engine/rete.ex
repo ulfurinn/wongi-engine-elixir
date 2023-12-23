@@ -6,7 +6,6 @@ defmodule Wongi.Engine.Rete do
   alias Wongi.Engine.Beta
   alias Wongi.Engine.Beta.Root
   alias Wongi.Engine.Compiler
-  alias Wongi.Engine.GenerationTracker
   alias Wongi.Engine.JoinResults
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
@@ -40,9 +39,11 @@ defmodule Wongi.Engine.Rete do
     :manual,
     :tokens,
     :neg_join_results,
-    :generation_tracker,
     :ncc_tokens,
     :ncc_owners,
+    # ---
+    :generation_by_wme,
+    :generation_by_token,
     # ---
     :alpha_subscriptions,
     :beta_root,
@@ -65,9 +66,11 @@ defmodule Wongi.Engine.Rete do
       manual: MapSet.new(),
       tokens: %{},
       neg_join_results: JoinResults.new(),
-      generation_tracker: GenerationTracker.new(),
       ncc_tokens: %{},
       ncc_owners: %{},
+      # ---
+      generation_by_wme: %{},
+      generation_by_token: %{},
       # ---
       alpha_subscriptions: %{},
       beta_root: root,
@@ -289,8 +292,8 @@ defmodule Wongi.Engine.Rete do
     |> delete_wme(wme)
   end
 
-  defp can_delete_wme?(%__MODULE__{generation_tracker: tracker} = rete, wme) do
-    !has_manual?(rete, wme) && GenerationTracker.empty?(tracker, wme)
+  defp can_delete_wme?(%__MODULE__{} = rete, wme) do
+    !has_manual?(rete, wme) && not generated?(rete, wme)
   end
 
   defp delete_wme(%__MODULE__{wmes: wmes} = rete, wme) do
@@ -368,8 +371,13 @@ defmodule Wongi.Engine.Rete do
           rete
       end
 
-    wmes
-    |> Enum.reduce(rete, &retract(&2, &1, token))
+    case wmes do
+      nil ->
+        rete
+
+      _ ->
+        wmes |> Enum.reduce(rete, &retract(&2, &1, token))
+    end
   end
 
   def tokens(%__MODULE__{tokens: tokens}, node) do
@@ -531,18 +539,14 @@ defmodule Wongi.Engine.Rete do
     %__MODULE__{rete | indexes: indexes}
   end
 
-  defp track_generation(%__MODULE__{generation_tracker: tracker} = rete, wme, token) do
+  defp track_generation(%__MODULE__{} = rete, wme, token) do
     rete
-    |> put_generation_tracker(GenerationTracker.add(tracker, wme, token))
+    |> generation_add(wme, token)
   end
 
-  defp remove_generator(%__MODULE__{generation_tracker: tracker} = rete, token) do
+  defp remove_generator(%__MODULE__{} = rete, token) do
     rete
-    |> put_generation_tracker(GenerationTracker.remove(tracker, token))
-  end
-
-  defp generated_wmes(%__MODULE__{generation_tracker: tracker}, token) do
-    GenerationTracker.get(tracker, token)
+    |> generation_remove(token)
   end
 
   defp set_manual(%__MODULE__{manual: manual} = rete, wme) do
@@ -572,7 +576,71 @@ defmodule Wongi.Engine.Rete do
     %__MODULE__{rete | neg_join_results: jrs}
   end
 
-  defp put_generation_tracker(rete, tracker) do
-    %__MODULE__{rete | generation_tracker: tracker}
+  defp generation_add(
+         %__MODULE__{generation_by_wme: by_wme, generation_by_token: by_token} = rete,
+         wme,
+         token
+       ) do
+    by_wme =
+      by_wme
+      |> Map.put_new_lazy(wme, &MapSet.new/0)
+      |> Map.update!(wme, &MapSet.put(&1, token))
+
+    by_token =
+      by_token
+      |> Map.put_new_lazy(token, &MapSet.new/0)
+      |> Map.update!(token, &MapSet.put(&1, wme))
+
+    %__MODULE__{
+      rete
+      | generation_by_wme: by_wme,
+        generation_by_token: by_token
+    }
+  end
+
+  defp generated_wmes(%__MODULE__{generation_by_token: by_token}, %Token{} = token) do
+    Map.get(by_token, token)
+  end
+
+  defp generated?(%__MODULE__{generation_by_wme: by_wme}, %WME{} = wme) do
+    Map.has_key?(by_wme, wme)
+  end
+
+  defp generated?(%__MODULE__{generation_by_token: by_token}, %Token{} = token) do
+    Map.has_key?(by_token, token)
+  end
+
+  defp generation_remove(
+         %__MODULE__{generation_by_wme: by_wme, generation_by_token: by_token} = rete,
+         token
+       ) do
+    by_token = Map.delete(by_token, token)
+
+    by_wme =
+      case generated_wmes(rete, token) do
+        nil ->
+          by_wme
+
+        wmes ->
+          Enum.reduce(wmes, by_wme, fn wme, by_wme ->
+            by_wme
+            |> Map.update!(wme, &MapSet.delete(&1, token))
+            |> delete_if(wme, &Enum.empty?/1)
+          end)
+      end
+
+    %__MODULE__{
+      rete
+      | generation_by_wme: by_wme,
+        generation_by_token: by_token
+    }
+  end
+
+  defp delete_if(%{} = map, key, predicate) do
+    if predicate.(Map.get(map, key)) do
+      Map.delete(map, key)
+    else
+      map
+    end
   end
 end
