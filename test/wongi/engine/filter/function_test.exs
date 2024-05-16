@@ -40,7 +40,7 @@ defmodule Wongi.Engine.Filter.FunctionTest do
         rule(
           forall: [
             has(:a, :b, var(:x)),
-            filter(:x, &__MODULE__.true?/1)
+            filter(var(:x), &__MODULE__.true?/1)
           ]
         )
       )
