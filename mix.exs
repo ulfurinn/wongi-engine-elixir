@@ -17,7 +17,7 @@ defmodule Wongi.Engine.MixProject do
       source_url: "https://github.com/ulfurinn/wongi-engine-elixir",
       docs: [
         main: "Wongi.Engine",
-        extras: ["ruby.md"],
+        extras: ["pages/ruby.md"],
         logo: "./wongi.png"
       ],
       aliases: aliases(),
