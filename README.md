@@ -3,6 +3,8 @@
 [![Build Status](https://github.com/ulfurinn/wongi-engine-elixir/actions/workflows/test.yml/badge.svg)](https://github.com/ulfurinn/wongi-engine-elixir/actions/workflows/test.yml)
 [![hex.pm](https://img.shields.io/hexpm/v/wongi_engine)](https://hex.pm/packages/wongi_engine)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R6R0YVX79)
+
 This is a pure-Elixir forward-chaining rule engine based on the classic [Rete algorithm](http://en.wikipedia.org/wiki/Rete_algorithm).
 
 It's a port of the [Ruby library](https://github.com/ulfurinn/wongi-engine) of the same name. It aims to keep the public API close enough for rules to be easily portable, where their respective languages align.
