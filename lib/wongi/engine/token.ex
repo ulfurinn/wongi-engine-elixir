@@ -23,6 +23,13 @@ defmodule Wongi.Engine.Token do
     }
   end
 
+  @doc "Returns all bound variables of the token."
+  def assignments(%__MODULE__{assignments: assignments, parents: parents}) do
+    Enum.map(parents, &assignments/1)
+    |> Enum.reduce(%{}, &Map.merge/2)
+    |> Map.merge(assignments)
+  end
+
   @doc "Returns the value of a bound variable."
   @spec fetch(t(), atom()) :: {:ok, any()} | :error
   def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) do
