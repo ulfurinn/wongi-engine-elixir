@@ -32,7 +32,6 @@ defmodule Wongi.Engine.Rete do
 
   @type t() :: %__MODULE__{}
 
-  @derive {Inspect, except: [:op_queue]}
   defstruct [
     :wmes,
     :indexes,
@@ -49,9 +48,7 @@ defmodule Wongi.Engine.Rete do
     :beta_root,
     :beta_table,
     :beta_subscriptions,
-    :productions,
-    :op_queue,
-    :processing
+    :productions
   ]
 
   def new do
@@ -76,9 +73,7 @@ defmodule Wongi.Engine.Rete do
       beta_root: root,
       beta_table: %{Beta.ref(root) => root},
       beta_subscriptions: %{},
-      productions: MapSet.new(),
-      op_queue: :queue.new(),
-      processing: false
+      productions: MapSet.new()
     }
     |> seed()
   end
@@ -98,7 +93,7 @@ defmodule Wongi.Engine.Rete do
 
   def assert(rete, %WME{} = wme, generator) do
     rete
-    |> trigger({:assert, wme, generator})
+    |> handle_operation({:assert, wme, generator})
   end
 
   def assert(rete, {s, p, o}, generator),
@@ -113,7 +108,7 @@ defmodule Wongi.Engine.Rete do
 
   def retract(rete, %WME{} = wme, generator) do
     rete
-    |> trigger({:retract, wme, generator})
+    |> handle_operation({:retract, wme, generator})
   end
 
   def retract(rete, {s, p, o}, generator),
@@ -203,35 +198,6 @@ defmodule Wongi.Engine.Rete do
 
   defp seed(%__MODULE__{beta_root: beta_root} = rete) do
     Root.seed(beta_root, rete)
-  end
-
-  defp trigger(%__MODULE__{op_queue: op_queue, processing: processing} = rete, operation) do
-    rete =
-      rete
-      |> put_op_queue(:queue.in(operation, op_queue))
-
-    if processing do
-      rete
-    else
-      rete
-      |> run_op_queue()
-    end
-  end
-
-  defp run_op_queue(%__MODULE__{op_queue: op_queue} = rete) do
-    case :queue.out(op_queue) do
-      {{:value, operation}, op_queue} ->
-        rete
-        |> put_op_queue(op_queue)
-        |> put_processing(true)
-        |> handle_operation(operation)
-        |> put_processing(false)
-        |> run_op_queue()
-
-      {:empty, op_queue} ->
-        rete
-        |> put_op_queue(op_queue)
-    end
   end
 
   defp handle_operation(rete, {:assert, wme, generator}) do
@@ -488,14 +454,6 @@ defmodule Wongi.Engine.Rete do
 
   @spec productions(Wongi.Engine.Rete.t()) :: any()
   def productions(%__MODULE__{productions: productions}), do: productions
-
-  defp put_op_queue(%__MODULE__{} = rete, op_queue) do
-    %__MODULE__{rete | op_queue: op_queue}
-  end
-
-  defp put_processing(%__MODULE__{} = rete, processing) do
-    %__MODULE__{rete | processing: processing}
-  end
 
   defp put_beta_table(%__MODULE__{} = rete, beta_table) do
     %__MODULE__{rete | beta_table: beta_table}
