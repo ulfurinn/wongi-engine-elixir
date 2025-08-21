@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         id: plt_cache
         with:
-          path: priv/plts
+          path: plts
           key: ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}
           restore-keys: ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}
 
