@@ -564,10 +564,6 @@ defmodule Wongi.Engine.Rete do
     Map.has_key?(by_wme, wme)
   end
 
-  defp generated?(%__MODULE__{generation_by_token: by_token}, %Token{} = token) do
-    Map.has_key?(by_token, token)
-  end
-
   defp generation_remove(
          %__MODULE__{generation_by_wme: by_wme, generation_by_token: by_token} = rete,
          token
