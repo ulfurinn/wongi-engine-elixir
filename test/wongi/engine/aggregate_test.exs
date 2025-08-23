@@ -162,4 +162,40 @@ defmodule Wongi.Engine.AggregateTest do
     assert t1[:number] == t1[:product]
     assert t2[:number] == t2[:product]
   end
+
+  describe "issue 20" do
+    # https://github.com/ulfurinn/wongi-engine-elixir/issues/20
+    test "wme state is consistent with token state" do
+      rete =
+        new()
+        |> compile(
+          rule(
+            forall: [
+              has(var(:s), :p, var(:o)),
+              aggregate(&min/1, :min, over: :o, partition: :s)
+            ],
+            do: [
+              gen(var(:s), :min, var(:min))
+            ]
+          )
+        )
+        |> compile(
+          rule(
+            forall: [
+              has(:_, :min, var(:value)),
+              aggregate(&Enum.to_list/1, :collected, over: :value)
+            ],
+            do: [
+              gen(:total, :collected, var(:collected))
+            ]
+          )
+        )
+        |> assert(:a, :p, 1)
+        |> assert(:b, :p, 2)
+
+      # Assert: single result; was producing multiple ones before the fix
+      assert [result] = rete |> select(:_, :collected, :_) |> Enum.to_list()
+      assert Enum.sort(result.object) == [1, 2]
+    end
+  end
 end
