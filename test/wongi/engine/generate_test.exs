@@ -200,4 +200,33 @@ defmodule Wongi.Engine.GenerateTest do
 
     assert [_token] = tokens(rete, ref) |> Enum.to_list()
   end
+
+  test "supports functional generators" do
+    rete =
+      new()
+      |> compile(
+        rule(
+          forall: [
+            has(var(:subject), :dynamic, var(:predicate))
+          ],
+          do: [
+            gen(fn token ->
+              [
+                {token[:subject], token[:predicate], 1},
+                {token[:subject], token[:predicate], 2}
+              ]
+            end)
+          ]
+        )
+      )
+      |> assert(:x, :dynamic, :y)
+
+    assert [_wme] = rete |> select(:x, :y, 1) |> Enum.to_list()
+    assert [_wme] = rete |> select(:x, :y, 2) |> Enum.to_list()
+
+    rete = rete |> retract(:x, :dynamic, :y)
+
+    assert [] = rete |> select(:x, :y, 1) |> Enum.to_list()
+    assert [] = rete |> select(:x, :y, 2) |> Enum.to_list()
+  end
 end

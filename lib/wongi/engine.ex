@@ -196,7 +196,7 @@ defmodule Wongi.Engine do
 
   @type t() :: Wongi.Engine.Rete.t()
   @type wme() :: Wongi.Engine.WME.t()
-  @type fact() :: {any(), any(), any()} | wme()
+  @type fact() :: Wongi.Engine.WME.fact()
   @type template() :: {any(), any(), any()} | wme()
   @type rule() :: Wongi.Engine.DSL.Rule.t()
 

@@ -1,7 +1,7 @@
 defmodule Wongi.Engine.Action.Generator do
   @moduledoc false
   alias Wongi.Engine.WME
-  defstruct [:template]
+  defstruct [:template, :generator]
 
   def new(s, p, o) do
     %__MODULE__{
@@ -9,11 +9,17 @@ defmodule Wongi.Engine.Action.Generator do
     }
   end
 
+  def new(fun) do
+    %__MODULE__{
+      generator: fun
+    }
+  end
+
   defimpl Wongi.Engine.Action do
     alias Wongi.Engine.DSL.Var
     alias Wongi.Engine.Rete
 
-    def execute(%@for{template: template}, token, rete) do
+    def execute(%@for{template: template}, token, rete) when template != nil do
       wme =
         [:subject, :predicate, :object]
         |> Enum.map(fn field ->
@@ -27,6 +33,14 @@ defmodule Wongi.Engine.Action.Generator do
       # consistency check
 
       Rete.assert(rete, wme, token)
+    end
+
+    def execute(%@for{generator: fun}, token, rete) when is_function(fun, 1) do
+      fun.(token)
+      |> List.wrap()
+      |> Enum.reduce(rete, fn wme, rete ->
+        Rete.assert(rete, wme, token)
+      end)
     end
 
     def deexecute(_, _, rete) do

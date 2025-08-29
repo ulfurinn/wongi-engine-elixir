@@ -8,6 +8,8 @@ defmodule Wongi.Engine.WME do
           object: any()
         }
 
+  @type fact() :: t() | {term(), term(), term()}
+
   defstruct [:subject, :predicate, :object]
 
   @doc false

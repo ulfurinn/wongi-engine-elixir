@@ -170,6 +170,13 @@ defmodule Wongi.Engine.DSL do
   @spec gen(any(), any(), any()) :: action()
   def gen(s, p, o), do: Generator.new(s, p, o)
 
+  @doc """
+  An action that produces new facts.
+  """
+  @spec gen((Wongi.Engine.Token.t() -> Wongi.Engine.WME.fact() | list(Wongi.Engine.WME.fact()))) ::
+          action()
+  def gen(fun) when is_function(fun, 1), do: Generator.new(fun)
+
   defprotocol Clause do
     @moduledoc "Rule matcher."
     def compile(clause, context)
