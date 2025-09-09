@@ -42,21 +42,58 @@ defmodule Wongi.Engine.Beta.Aggregate do
     }
   end
 
-  def evaluate(node, rete) do
-    evaluate(node, Rete.beta_subscriptions(rete, node), rete)
+  def evaluate(node, node_action, token, rete) do
+    evaluate(node, node_action, token, Rete.beta_subscriptions(rete, node), rete)
   end
 
-  def evaluate(node, child, rete) when not is_list(child) do
-    evaluate(node, [child], rete)
+  def evaluate(node, node_action, token, child, rete) when not is_list(child) do
+    evaluate(node, node_action, token, [child], rete)
   end
 
-  def evaluate(node, betas, rete) do
+  def evaluate(node, :seed, nil, betas, rete) do
     partition = partition_fn(node)
 
     groups =
       if partition do
         Enum.group_by(Rete.tokens(rete, node), partition)
         |> Map.values()
+      else
+        [Rete.tokens(rete, node)]
+      end
+
+    Enum.reduce(groups, rete, &evaluate_partition(node, betas, &1, &2))
+  end
+
+  def evaluate(node, :activate, token, betas, rete) do
+    partition = partition_fn(node)
+
+    token_partition = if partition, do: partition.(token)
+
+    rete = Rete.add_token(rete, token)
+
+    evaluate_changed_partition(node, token_partition, partition, betas, rete)
+  end
+
+  def evaluate(node, :deactivate, token, betas, rete) do
+    partition = partition_fn(node)
+
+    token_partition = if partition, do: partition.(token)
+
+    rete = Rete.remove_token(rete, token)
+    rete = Common.beta_deactivate(Rete.beta_subscriptions(rete, node), token, rete)
+
+    evaluate_changed_partition(node, token_partition, partition, betas, rete)
+  end
+
+  defp evaluate_changed_partition(node, token_partition, partition_f, betas, rete) do
+    groups =
+      if token_partition do
+        Enum.group_by(Rete.tokens(rete, node), partition_f)
+        |> Map.get(token_partition)
+        |> case do
+          nil -> []
+          partition -> [partition]
+        end
       else
         [Rete.tokens(rete, node)]
       end
@@ -106,7 +143,7 @@ defmodule Wongi.Engine.Beta.Aggregate do
     def equivalent?(_, _, _), do: false
 
     def seed(node, beta, rete) do
-      @for.evaluate(node, beta, rete)
+      @for.evaluate(node, :seed, nil, beta, rete)
     end
 
     @spec alpha_activate(
@@ -124,14 +161,11 @@ defmodule Wongi.Engine.Beta.Aggregate do
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(node, token, rete) do
-      rete = Rete.add_token(rete, token)
-      @for.evaluate(node, rete)
+      @for.evaluate(node, :activate, token, rete)
     end
 
     def beta_deactivate(node, token, rete) do
-      rete = Rete.remove_token(rete, token)
-      rete = Common.beta_deactivate(Rete.beta_subscriptions(rete, node), token, rete)
-      @for.evaluate(node, rete)
+      @for.evaluate(node, :deactivate, token, rete)
     end
   end
 end
