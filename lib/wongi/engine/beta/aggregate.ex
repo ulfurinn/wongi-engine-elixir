@@ -86,19 +86,19 @@ defmodule Wongi.Engine.Beta.Aggregate do
   end
 
   defp evaluate_changed_partition(node, token_partition, partition_f, betas, rete) do
-    groups =
+    group =
       if token_partition do
         Enum.group_by(Rete.tokens(rete, node), partition_f)
         |> Map.get(token_partition)
-        |> case do
-          nil -> []
-          partition -> [partition]
-        end
       else
-        [Rete.tokens(rete, node)]
+        Rete.tokens(rete, node)
       end
 
-    Enum.reduce(groups, rete, &evaluate_partition(node, betas, &1, &2))
+    if group do
+      evaluate_partition(node, betas, group, rete)
+    else
+      rete
+    end
   end
 
   defp evaluate_partition(node, betas, tokens, rete) do
