@@ -98,11 +98,11 @@ defmodule Wongi.Engine.WME do
     def inspect(%@for{subject: s, predicate: p, object: o}, opts) do
       concat([
         "WME.new(",
-        Inspect.inspect(s, opts),
+        to_doc(s, opts),
         ", ",
-        Inspect.inspect(p, opts),
+        to_doc(p, opts),
         ", ",
-        Inspect.inspect(o, opts),
+        to_doc(o, opts),
         ")"
       ])
     end

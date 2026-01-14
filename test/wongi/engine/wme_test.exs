@@ -51,4 +51,9 @@ defmodule Wongi.Engine.WMETest do
     assert {[:subject, :object], [:a, :c]} = index_pattern(new(:a, :_, :c))
     assert {[:predicate, :object], [:b, :c]} = index_pattern(new(:_, :b, :c))
   end
+
+  test "pretty inspect works with Vars" do
+    wme = new(%Wongi.Engine.DSL.Var{name: :x}, :p, 1)
+    assert inspect(wme, pretty: true) =~ "WME.new("
+  end
 end
