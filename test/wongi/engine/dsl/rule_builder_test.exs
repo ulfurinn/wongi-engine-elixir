@@ -356,7 +356,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
   use ExUnit.Case, async: true
   use Wongi.Engine.DSL.RuleBuilder.Syntax
 
-  # Import filter functions for use in tests (var: 1 is already imported by use Syntax)
+  # Import for use in assertions outside rule blocks (inside rule blocks, these are auto-imported)
   import Wongi.Engine.DSL, only: [greater: 2, var: 1]
 
   alias Wongi.Engine.Action.Generator
@@ -1114,7 +1114,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.DefruleTest do
   use ExUnit.Case, async: true
   use Wongi.Engine.DSL.RuleBuilder.Syntax
 
-  # Import filter functions
+  # Import for use in assertions outside rule blocks (inside rule blocks, these are auto-imported)
   import Wongi.Engine.DSL, only: [greater: 2, var: 1]
 
   alias Wongi.Engine.Action.Generator

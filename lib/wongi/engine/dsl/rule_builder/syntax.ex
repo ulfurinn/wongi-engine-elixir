@@ -55,6 +55,19 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   - Full LSP support (undefined variables get flagged)
   - Meaningful names in debugging (`var(:user)` not `var(:__gs_42__)`)
   - Natural Elixir semantics for variable reuse
+
+  ## Auto-Imported Functions
+
+  Inside `rule` and `defrule` blocks, the following are automatically imported:
+
+  - **From `RuleBuilder.Compose`**: `has`, `neg`, `assign`, `filter`, `aggregate`,
+    `ncc`, `any`, `gen`
+  - **From `Wongi.Engine.DSL`**: `var`, `equal`, `diff`, `less`, `lte`, `greater`,
+    `gte`, `in_list`, `not_in_list`
+
+  These imports are scoped to the rule block - they don't pollute your module's
+  namespace. If you need `var/1` or filter functions outside rule blocks (e.g.,
+  in assertions), import them explicitly.
   """
 
   alias Wongi.Engine.DSL.RuleBuilder
@@ -62,8 +75,6 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   defmacro __using__(_opts) do
     quote do
       import Wongi.Engine.DSL.RuleBuilder.Syntax, only: [rule: 2, defrule: 2]
-      import Wongi.Engine.DSL.RuleBuilder.Compose
-      import Wongi.Engine.DSL, only: [var: 1]
     end
   end
 
@@ -144,8 +155,28 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     # Note: caller arg is passed but not currently used
     body = build_bind_chain(exprs, nil)
 
+    # Wrap body in a block with scoped imports so DSL functions are only
+    # available inside the rule block, not polluting the module namespace
     quote do
-      unquote(body)
+      (
+        import Wongi.Engine.DSL.RuleBuilder.Compose
+        # Import var/1 and comparison filter functions, but NOT filter/1,2
+        # since Compose.filter is what we want inside rules
+        import Wongi.Engine.DSL,
+          only: [
+            var: 1,
+            equal: 2,
+            diff: 2,
+            less: 2,
+            lte: 2,
+            greater: 2,
+            gte: 2,
+            in_list: 2,
+            not_in_list: 2
+          ]
+
+        unquote(body)
+      )
       |> RuleBuilder.run(unquote(name))
     end
   end
