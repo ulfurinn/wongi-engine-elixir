@@ -156,7 +156,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
   # Build the nested bind chain
   # Every expression in a rule block should be either:
-  # - An arrow expression: `pattern <- dsl_fn(...)` 
+  # - An arrow expression: `pattern <- dsl_fn(...)`
   # - A bare DSL function call: `dsl_fn(...)`
   # Both return RuleBuilder values that get chained together.
 

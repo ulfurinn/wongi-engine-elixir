@@ -3,11 +3,11 @@ defmodule Wongi.Engine.Token do
   @moduledoc """
   An intermediate data structure representing a partial match.
   """
+  @behaviour Access
+
   alias Wongi.Engine.Beta
   alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.WME
-
-  @behaviour Access
 
   @type t() :: %__MODULE__{}
 
