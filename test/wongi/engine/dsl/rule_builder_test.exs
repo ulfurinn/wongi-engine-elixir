@@ -158,6 +158,13 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
 
       assert [%Filter{}] = rule.forall
     end
+
+    test "arity-2 filter with var and function" do
+      builder = Compose.filter(var(:age), fn age -> age > 18 end)
+      rule = RuleBuilder.run(builder, :test)
+
+      assert [%Filter{}] = rule.forall
+    end
   end
 
   describe "Compose.gen/3" do
@@ -492,6 +499,17 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       assert [%Has{}, %Filter{}] = r.forall
     end
 
+    test "rule with arity-2 filter (var + function)" do
+      r =
+        rule :with_filter_2 do
+          {user, _, age} <- has(:_, :age, :_)
+          filter(age, fn a -> a > 18 end)
+          _ <- gen(user, :adult, true)
+        end
+
+      assert [%Has{}, %Filter{}] = r.forall
+    end
+
     test "rule with multiple gen actions" do
       r =
         rule :multi_gen do
@@ -611,6 +629,25 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
 
       [wme] = MapSet.to_list(results)
       assert wme.object == 34
+    end
+
+    test "rule with arity-2 filter works correctly" do
+      r =
+        rule :filter_test do
+          {user, _, age} <- has(:_, :age, :_)
+          filter(age, fn a -> a > 18 end)
+          _ <- gen(user, :adult, true)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:alice, :age, 25})
+        |> Rete.assert({:bob, :age, 15})
+
+      # Only alice (age 25) should match
+      assert MapSet.size(Rete.select(engine, :alice, :adult, :_)) == 1
+      assert MapSet.size(Rete.select(engine, :bob, :adult, :_)) == 0
     end
 
     test "rule with aggregate computes min correctly" do
