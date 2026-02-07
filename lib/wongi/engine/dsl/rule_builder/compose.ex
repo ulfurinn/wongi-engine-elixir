@@ -35,6 +35,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
 
   alias Wongi.Engine.Action.Generator
   alias Wongi.Engine.DSL.Aggregate
+  alias Wongi.Engine.DSL.Any
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
@@ -221,6 +222,66 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   def ncc(%RuleBuilder{} = builder) do
     {clauses, _bound_vars} = RuleBuilder.run_matcher_only(builder)
     forall_clause(NCC.new(clauses), :ok)
+  end
+
+  @doc """
+  A disjunction - passes if any branch matches.
+
+  Takes a list of RuleBuilders, one per branch. Each RuleBuilder is run in
+  matcher-only mode (actions are not allowed) and the extracted clauses form
+  the branches of the Any clause.
+
+  Variables from inside the branches ARE exported to the outer context (unlike
+  NCC). All branches should bind consistent variables.
+
+  Yields a map of all bound variables: `%{name => var(:name)}`.
+
+  ## Examples
+
+  With the Syntax macro:
+
+      rule :match_type do
+        {x, _, _} <- has(:_, :entity, true)
+
+        vars <- any do
+          branch do
+            {_, _, y} <- has(x, :type_a, :_)
+          end
+          branch do
+            {_, _, y} <- has(x, :type_b, :_)
+          end
+        end
+
+        # vars.y is available here
+        _ <- gen(x, :matched, vars.y)
+      end
+
+  With Compose directly:
+
+      Compose.any([
+        Compose.has(x, :type_a, var(:y)),
+        Compose.has(x, :type_b, var(:y))
+      ])
+  """
+  @spec any([RuleBuilder.t()]) :: RuleBuilder.t()
+  def any(branches) when is_list(branches) do
+    # Process each branch to extract clauses and bound vars
+    {branch_clauses, all_vars} =
+      Enum.reduce(branches, {[], MapSet.new()}, fn builder, {clauses_acc, vars_acc} ->
+        {clauses, bound_vars} = RuleBuilder.run_matcher_only(builder)
+        {[clauses | clauses_acc], MapSet.union(vars_acc, bound_vars)}
+      end)
+
+    # Reverse to maintain order
+    branch_clauses = Enum.reverse(branch_clauses)
+
+    # Build the vars map: %{name => var(:name)}
+    vars_map =
+      all_vars
+      |> Enum.map(fn name -> {name, %Var{name: name}} end)
+      |> Map.new()
+
+    forall_clause(Any.new(branch_clauses), vars_map)
   end
 
   @doc """
