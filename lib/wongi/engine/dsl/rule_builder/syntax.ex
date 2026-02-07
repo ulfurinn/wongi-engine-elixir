@@ -208,6 +208,12 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     {:ncc, meta, [inner_builder]}
   end
 
+  defp transform_bare_expr({:any, meta, [[do: block]]}, caller) do
+    # any do...branch...end as bare expression - transform each branch
+    branch_builders = extract_and_transform_branches(block, caller)
+    {:any, meta, [branch_builders]}
+  end
+
   defp transform_bare_expr(expr, _caller) do
     # Other expressions pass through unchanged
     expr
@@ -291,9 +297,33 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     {:ncc, meta, [inner_builder]}
   end
 
+  defp transform_rhs(_pattern, {:any, meta, [[do: block]]}, caller) do
+    # any do...branch...end - transform each branch
+    branch_builders = extract_and_transform_branches(block, caller)
+    {:any, meta, [branch_builders]}
+  end
+
   defp transform_rhs(_pattern, rhs, _caller) do
     # Unknown function, pass through unchanged
     rhs
+  end
+
+  # Extract branch do...end blocks from an any do-block and transform each
+  defp extract_and_transform_branches(block, caller) do
+    exprs = extract_exprs(block)
+
+    branch_builders =
+      Enum.map(exprs, fn
+        {:branch, _, [[do: branch_block]]} ->
+          branch_exprs = extract_exprs(branch_block)
+          build_bind_chain(branch_exprs, caller)
+
+        other ->
+          raise ArgumentError,
+                "expected `branch do...end` inside `any do...end`, got: #{Macro.to_string(other)}"
+      end)
+
+    branch_builders
   end
 
   # Inject var(:name) for SPO (subject, predicate, object) patterns

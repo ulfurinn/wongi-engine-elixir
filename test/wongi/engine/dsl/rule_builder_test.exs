@@ -812,6 +812,183 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
     end
   end
 
+  describe "rule macro - any" do
+    alias Wongi.Engine.DSL.Any
+
+    test "rule with any produces correct structure" do
+      r =
+        rule :with_any do
+          {x, _, _} <- has(:_, :entity, true)
+
+          vars <-
+            any do
+              branch do
+                {_, _, y} <- has(x, :type_a, :_)
+              end
+
+              branch do
+                {_, _, y} <- has(x, :type_b, :_)
+              end
+            end
+
+          _ <- gen(x, :matched, vars.y)
+        end
+
+      assert [%Has{}, %Any{} = any_clause] = r.forall
+      assert length(any_clause.clauses) == 2
+
+      [[branch1_clause], [branch2_clause]] = any_clause.clauses
+      assert branch1_clause.predicate == :type_a
+      assert branch2_clause.predicate == :type_b
+    end
+
+    test "any returns map of bound vars" do
+      r =
+        rule :any_vars do
+          {x, _, _} <- has(:_, :entity, true)
+
+          vars <-
+            any do
+              branch do
+                {_, _, y} <- has(x, :type_a, :_)
+                {_, _, z} <- has(y, :value, :_)
+              end
+
+              branch do
+                {_, _, y} <- has(x, :type_b, :_)
+                {_, _, z} <- has(y, :other, :_)
+              end
+            end
+
+          _ <- gen(x, :y_val, vars.y)
+          _ <- gen(x, :z_val, vars.z)
+        end
+
+      # The rule should compile - vars.y and vars.z are accessible
+      assert [%Has{}, %Any{}] = r.forall
+      assert length(r.actions) == 2
+    end
+
+    test "any matches when first branch matches" do
+      r =
+        rule :any_first do
+          {_, _, x} <- has(:a, :b, :_)
+
+          _vars <-
+            any do
+              branch do
+                {_, _, _} <- has(x, :d, :e)
+              end
+
+              branch do
+                {_, _, _} <- has(x, :f, :g)
+              end
+            end
+
+          _ <- gen(x, :matched, true)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:a, :b, :c})
+        |> Rete.assert({:c, :d, :e})
+
+      assert MapSet.size(Rete.select(engine, :c, :matched, :_)) == 1
+    end
+
+    test "any matches when second branch matches" do
+      r =
+        rule :any_second do
+          {_, _, x} <- has(:a, :b, :_)
+
+          _vars <-
+            any do
+              branch do
+                {_, _, _} <- has(x, :d, :e)
+              end
+
+              branch do
+                {_, _, _} <- has(x, :f, :g)
+              end
+            end
+
+          _ <- gen(x, :matched, true)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:a, :b, :c})
+        |> Rete.assert({:c, :f, :g})
+
+      assert MapSet.size(Rete.select(engine, :c, :matched, :_)) == 1
+    end
+
+    test "any exports variables to outer context" do
+      r =
+        rule :any_exports do
+          {_, _, x} <- has(:a, :b, :_)
+
+          vars <-
+            any do
+              branch do
+                {_, _, y} <- has(x, :d, :_)
+              end
+
+              branch do
+                {_, _, y} <- has(x, :e, :_)
+              end
+            end
+
+          {_, _, _} <- has(vars.y, :v, :w)
+          _ <- gen(x, :found_chain, true)
+        end
+
+      # Match via first branch
+      engine1 =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:a, :b, :c})
+        |> Rete.assert({:c, :d, :target1})
+        |> Rete.assert({:target1, :v, :w})
+
+      assert MapSet.size(Rete.select(engine1, :c, :found_chain, :_)) == 1
+
+      # Match via second branch
+      engine2 =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:a, :b, :c})
+        |> Rete.assert({:c, :e, :target2})
+        |> Rete.assert({:target2, :v, :w})
+
+      assert MapSet.size(Rete.select(engine2, :c, :found_chain, :_)) == 1
+    end
+
+    test "any raises error if action is used inside branch" do
+      assert_raise ArgumentError, ~r/actions are not allowed in matcher-only mode/, fn ->
+        rule :bad_any do
+          {x, _, _} <- has(:_, :entity, true)
+
+          _vars <-
+            any do
+              branch do
+                {_, _, y} <- has(x, :type_a, :_)
+                _ <- gen(y, :error, true)
+              end
+
+              branch do
+                {_, _, _} <- has(x, :type_b, :_)
+              end
+            end
+
+          _ <- gen(x, :done, true)
+        end
+      end
+    end
+  end
+
   describe "compatibility with old DSL" do
     test "produces same structure as old DSL" do
       alias Wongi.Engine.DSL, as: OldDSL
