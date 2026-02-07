@@ -66,20 +66,36 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   @doc """
   A matcher that passes if the specified fact is NOT present in working memory.
 
-  Adds a `Neg` clause to the rule's forall list and yields the `{s, p, o}` tuple.
+  Adds a `Neg` clause to the rule's forall list and yields `:ok`.
 
-  Note: Variables inside `neg` are locally scoped in Wongi - they don't bind
-  outside the negative match. However, if a variable is already bound from a
-  previous clause, it will be used as a test constraint.
+  ## Variable Scoping
+
+  Unlike `has/4`, variables inside `neg` are **locally scoped** in Wongi - new
+  variables introduced in a `neg` clause are only used within the negative match
+  and are NOT bound in the token for use elsewhere.
+
+  This means:
+  - **Already-bound variables** (from previous `has` clauses) work as test constraints
+  - **New variables** introduced in `neg` won't be available outside
+
+  Because of this scoping, `neg` returns `:ok` rather than a binding tuple.
+  Use it as a bare expression (no `<-` arrow needed):
 
   ## Examples
 
-      Compose.neg(var(:user), :deleted, true)
-      # Yields: {var(:user), :deleted, true}
+      # GOOD: Testing with already-bound variable
+      rule :check_not_deleted do
+        {user, _, _} <- has(:_, :active, true)
+        neg(user, :deleted, true)              # Bare call, tests bound user
+        _ <- gen(user, :valid, true)
+      end
+
+      # DON'T DO: Trying to bind new variables from neg
+      # {x, _, y} <- neg(:_, :foo, :_)  # x and y won't have values!
   """
   @spec neg(any(), any(), any()) :: RuleBuilder.t()
   def neg(s, p, o) do
-    forall_clause(Neg.new(s, p, o), {s, p, o})
+    forall_clause(Neg.new(s, p, o), :ok)
   end
 
   @doc """

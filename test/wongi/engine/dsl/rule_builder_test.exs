@@ -347,7 +347,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       r =
         rule :with_neg do
           {user, _, _} <- has(:_, :active, true)
-          {_, _, _} <- neg(user, :deleted, true)
+          neg(user, :deleted, true)
           _ <- gen(user, :valid, true)
         end
 
@@ -402,7 +402,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
         rule :complex do
           {user, _, name} <- has(:_, :name, :_)
           {_, _, age} <- has(user, :age, :_)
-          {_, _, _} <- neg(user, :deleted, true)
+          neg(user, :deleted, true)
           _ <- filter(greater(age, 0))
           computed <- assign(fn token -> String.upcase(to_string(token[name])) end)
           _ <- gen(user, :upper_name, computed)
@@ -460,7 +460,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       r =
         rule :neg_test do
           {user, _, _} <- has(:_, :active, true)
-          {_, _, _} <- neg(user, :deleted, true)
+          neg(user, :deleted, true)
           _ <- gen(user, :valid, true)
         end
 
