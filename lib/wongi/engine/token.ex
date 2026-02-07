@@ -4,7 +4,10 @@ defmodule Wongi.Engine.Token do
   An intermediate data structure representing a partial match.
   """
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.WME
+
+  @behaviour Access
 
   @type t() :: %__MODULE__{}
 
@@ -31,8 +34,11 @@ defmodule Wongi.Engine.Token do
   end
 
   @doc "Returns the value of a bound variable."
-  @spec fetch(t(), atom()) :: {:ok, any()} | :error
-  def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) do
+  @impl Access
+  @spec fetch(t(), atom() | Var.t()) :: {:ok, any()} | :error
+  def fetch(%__MODULE__{} = token, %Var{name: name}), do: fetch(token, name)
+
+  def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) when is_atom(var) do
     case Map.fetch(assignments, var) do
       {:ok, _value} = ok ->
         ok
@@ -47,12 +53,27 @@ defmodule Wongi.Engine.Token do
     end
   end
 
+  @impl Access
+  def get_and_update(%__MODULE__{}, _key, _fun) do
+    raise ArgumentError, "Wongi.Engine.Token is read-only and does not support updates"
+  end
+
+  @impl Access
+  def pop(%__MODULE__{}, _key) do
+    raise ArgumentError, "Wongi.Engine.Token is read-only and does not support pop"
+  end
+
   @doc false
+  def fetch(%__MODULE__{} = token, %Var{name: name}, extra_assignments) do
+    fetch(token, name, extra_assignments)
+  end
+
   def fetch(
         %__MODULE__{} = token,
         var,
         extra_assignments
-      ) do
+      )
+      when is_atom(var) do
     case Map.fetch(extra_assignments, var) do
       {:ok, value} ->
         {:ok, value}
