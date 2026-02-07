@@ -38,6 +38,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.NCC
   alias Wongi.Engine.DSL.Neg
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.RuleBuilder
@@ -177,6 +178,49 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   @spec aggregate(fun(), any(), keyword()) :: RuleBuilder.t()
   def aggregate(fun, var, opts) do
     forall_clause(Aggregate.new(fun, var, opts), var)
+  end
+
+  @doc """
+  A negated conjunctive condition - passes if the subchain does NOT match.
+
+  Takes a RuleBuilder containing the subchain of clauses. The RuleBuilder is
+  run in matcher-only mode (actions are not allowed) and the extracted clauses
+  form the NCC subchain.
+
+  Variables inside NCC are locally scoped - they can reference previously-bound
+  variables from the outer context, but new variables introduced inside the NCC
+  are not exported.
+
+  Yields `:ok` since NCC doesn't export any variables.
+
+  ## Examples
+
+  With the Syntax macro:
+
+      rule :check_valid do
+        {user, _, _} <- has(:_, :active, true)
+
+        ncc do
+          {_, _, x} <- has(user, :deleted, :_)
+          {_, _, _} <- has(x, :reason, :_)
+        end
+
+        _ <- gen(user, :valid, true)
+      end
+
+  With Compose directly:
+
+      Compose.ncc(
+        Compose.has(user, :deleted, var(:x))
+        |> RuleBuilder.bind(fn {_, _, x} ->
+          Compose.has(x, :reason, :_)
+        end)
+      )
+  """
+  @spec ncc(RuleBuilder.t()) :: RuleBuilder.t()
+  def ncc(%RuleBuilder{} = builder) do
+    {clauses, _bound_vars} = RuleBuilder.run_matcher_only(builder)
+    forall_clause(NCC.new(clauses), :ok)
   end
 
   @doc """

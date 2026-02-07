@@ -170,10 +170,10 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     transform_rhs(pattern, rhs, nil)
   end
 
-  defp build_bind_chain([expr], _caller) do
-    # Last expression is bare (no arrow) - pass through directly
+  defp build_bind_chain([expr], caller) do
+    # Last expression is bare (no arrow) - transform if needed and pass through
     # Must be a DSL function call that returns a RuleBuilder
-    expr
+    transform_bare_expr(expr, caller)
   end
 
   defp build_bind_chain([{:<-, _, [pattern, rhs]} | rest], caller) do
@@ -189,14 +189,28 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
   defp build_bind_chain([expr | rest], caller) do
     # Bare expression (no arrow) followed by more expressions
-    # Bind it with a wildcard pattern since we don't need its value
+    # Transform if needed, then bind with wildcard pattern since we don't need its value
+    transformed_expr = transform_bare_expr(expr, caller)
     rest_chain = build_bind_chain(rest, caller)
 
     quote do
-      RuleBuilder.bind(unquote(expr), fn _ ->
+      RuleBuilder.bind(unquote(transformed_expr), fn _ ->
         unquote(rest_chain)
       end)
     end
+  end
+
+  # Transform bare expressions (non-arrow) that need special handling
+  defp transform_bare_expr({:ncc, meta, [[do: block]]}, caller) do
+    # ncc do...end as bare expression - transform the inner block
+    exprs = extract_exprs(block)
+    inner_builder = build_bind_chain(exprs, caller)
+    {:ncc, meta, [inner_builder]}
+  end
+
+  defp transform_bare_expr(expr, _caller) do
+    # Other expressions pass through unchanged
+    expr
   end
 
   # Transform RHS based on the function being called and LHS pattern
@@ -266,6 +280,15 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   defp transform_rhs(_pattern, {:gen, _meta, _args} = rhs, _caller) do
     # gen doesn't need var injection (uses already-bound variables)
     rhs
+  end
+
+  defp transform_rhs(_pattern, {:ncc, meta, [[do: block]]}, caller) do
+    # ncc do...end - transform the block using normal arrow transformation
+    # and wrap in Compose.ncc(...)
+    exprs = extract_exprs(block)
+    inner_builder = build_bind_chain(exprs, caller)
+
+    {:ncc, meta, [inner_builder]}
   end
 
   defp transform_rhs(_pattern, rhs, _caller) do

@@ -686,6 +686,132 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
     end
   end
 
+  describe "rule macro - ncc" do
+    alias Wongi.Engine.DSL.NCC
+
+    test "rule with ncc produces correct structure" do
+      r =
+        rule :with_ncc do
+          {user, _, _} <- has(:_, :active, true)
+
+          ncc do
+            {_, _, _} <- has(user, :deleted, true)
+          end
+
+          _ <- gen(user, :valid, true)
+        end
+
+      assert [%Has{}, %NCC{} = ncc_clause, %Generator{}] = r.forall ++ r.actions
+      assert [%Has{} = inner_has] = ncc_clause.subchain
+      assert inner_has.subject == %Var{name: :user}
+      assert inner_has.predicate == :deleted
+    end
+
+    test "ncc with multiple clauses and variable chaining" do
+      r =
+        rule :ncc_chain do
+          {base, _, _} <- has(:_, :is, :base)
+
+          ncc do
+            {_, _, x} <- has(base, :b, :_)
+            {_, _, _} <- has(x, :y, :z)
+          end
+
+          _ <- gen(base, :valid, true)
+        end
+
+      assert [%Has{}, %NCC{} = ncc_clause] = r.forall
+      assert [has1, has2] = ncc_clause.subchain
+      assert has1.predicate == :b
+      assert has1.object == %Var{name: :x}
+      assert has2.subject == %Var{name: :x}
+      assert has2.predicate == :y
+    end
+
+    test "ncc prevents rule from firing when subchain matches" do
+      r =
+        rule :ncc_test do
+          {user, _, _} <- has(:_, :active, true)
+
+          ncc do
+            {_, _, _} <- has(user, :deleted, true)
+          end
+
+          _ <- gen(user, :valid, true)
+        end
+
+      # User without deleted flag - rule should fire
+      engine1 =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:alice, :active, true})
+
+      assert MapSet.size(Rete.select(engine1, :alice, :valid, :_)) == 1
+
+      # User with deleted flag - rule should not fire
+      engine2 =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:bob, :active, true})
+        |> Rete.assert({:bob, :deleted, true})
+
+      assert MapSet.size(Rete.select(engine2, :bob, :valid, :_)) == 0
+    end
+
+    test "ncc with multi-clause subchain" do
+      # Same as the classic NCC test - passes when the entire subchain does not match
+      r =
+        rule :ncc_multi do
+          {_, _, base} <- has(:base, :is, :_)
+
+          ncc do
+            {_, _, x} <- has(base, :b, :_)
+            {_, _, _} <- has(x, :y, :z)
+          end
+
+          {_, _, _} <- has(base, :u, :v)
+          _ <- gen(base, :passed, true)
+        end
+
+      # Base with u:v but no matching chain - rule should fire
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:base, :is, :a})
+        |> Rete.assert({:a, :u, :v})
+
+      assert MapSet.size(Rete.select(engine, :a, :passed, :_)) == 1
+
+      # Add the chain that makes NCC match - rule should stop firing
+      engine =
+        engine
+        |> Rete.assert({:a, :b, :x})
+        |> Rete.assert({:x, :y, :z})
+
+      assert MapSet.size(Rete.select(engine, :a, :passed, :_)) == 0
+
+      # Remove part of the chain - rule should fire again
+      engine = Rete.retract(engine, {:x, :y, :z})
+
+      assert MapSet.size(Rete.select(engine, :a, :passed, :_)) == 1
+    end
+
+    test "ncc raises error if action is used inside" do
+      assert_raise ArgumentError, ~r/actions are not allowed in matcher-only mode/, fn ->
+        rule :bad_ncc do
+          {user, _, _} <- has(:_, :active, true)
+
+          ncc do
+            {_, _, _} <- has(user, :deleted, true)
+            _ <- gen(user, :error, true)
+          end
+
+          _ <- gen(user, :valid, true)
+        end
+      end
+    end
+  end
+
   describe "compatibility with old DSL" do
     test "produces same structure as old DSL" do
       alias Wongi.Engine.DSL, as: OldDSL
