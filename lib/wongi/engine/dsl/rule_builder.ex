@@ -97,8 +97,50 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   """
   @spec run(t(), atom()) :: Rule.t()
   def run(%__MODULE__{run: run_fn}, name) do
-    initial = %Rule{ref: make_ref(), name: name, forall: [], actions: []}
+    initial = %Rule{
+      ref: make_ref(),
+      name: name,
+      forall: [],
+      actions: [],
+      mode: :full,
+      bound_vars: MapSet.new()
+    }
+
     {_final_value, rule} = run_fn.(initial)
     %{rule | forall: Enum.reverse(rule.forall), actions: Enum.reverse(rule.actions)}
+  end
+
+  @doc """
+  Runs a RuleBuilder in matcher-only mode to extract clauses.
+
+  This is used by `any()` and `ncc()` to process their inner RuleBuilders.
+  Actions are not allowed in this mode and will raise an error.
+
+  Returns `{clauses, bound_vars}` where:
+  - `clauses` - list of forall clauses (in order)
+  - `bound_vars` - MapSet of variable names that were bound
+
+  ## Examples
+
+      iex> builder = Compose.has(var(:x), :foo, var(:y))
+      iex> {clauses, vars} = RuleBuilder.run_matcher_only(builder)
+      iex> length(clauses)
+      1
+      iex> MapSet.member?(vars, :x)
+      true
+  """
+  @spec run_matcher_only(t()) :: {list(), MapSet.t(atom())}
+  def run_matcher_only(%__MODULE__{run: run_fn}) do
+    initial = %Rule{
+      ref: nil,
+      name: nil,
+      forall: [],
+      actions: [],
+      mode: :matcher_only,
+      bound_vars: MapSet.new()
+    }
+
+    {_final_value, rule} = run_fn.(initial)
+    {Enum.reverse(rule.forall), rule.bound_vars}
   end
 end
