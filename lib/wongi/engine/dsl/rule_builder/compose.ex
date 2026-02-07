@@ -34,6 +34,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   """
 
   alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Aggregate
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
@@ -145,6 +146,36 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
       end
 
     forall_clause(clause, :ok)
+  end
+
+  @doc """
+  A matcher that computes a value across all incoming tokens per partition group.
+
+  Adds an `Aggregate` clause to the rule's forall list and yields the output
+  variable for binding.
+
+  The aggregate produces exactly one token per partition group. If a partition
+  group has no tokens, the aggregate does not pass for that group.
+
+  ## Parameters
+
+  - `fun` - Aggregation function (receives list of values, e.g., `&Enum.count/1`, `&Enum.min/1`)
+  - `var` - Output variable (typically injected by Syntax from LHS pattern)
+  - `opts` - Options:
+    - `:over` - Variable to aggregate over (required)
+    - `:partition` - Variable(s) to partition/group by (optional)
+
+  ## Examples
+
+      # With Syntax macro:
+      min_weight <- aggregate(&min/1, over: weight)
+
+      # With Compose directly:
+      Compose.aggregate(&min/1, var(:min_weight), over: var(:weight))
+  """
+  @spec aggregate(fun(), any(), keyword()) :: RuleBuilder.t()
+  def aggregate(fun, var, opts) do
+    forall_clause(Aggregate.new(fun, var, opts), var)
   end
 
   @doc """

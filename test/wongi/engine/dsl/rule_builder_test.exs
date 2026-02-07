@@ -243,6 +243,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
   import Wongi.Engine.DSL, only: [greater: 2, var: 1]
 
   alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Aggregate
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
   alias Wongi.Engine.DSL.Has
@@ -500,6 +501,78 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
 
       [wme] = MapSet.to_list(results)
       assert wme.object == 34
+    end
+
+    test "rule with aggregate computes min correctly" do
+      r =
+        rule :find_lightest do
+          {_fruit, _, weight} <- has(:_, :weight, :_)
+          min_weight <- aggregate(&Enum.min/1, over: weight)
+          # Use min_weight directly in has() rather than pin in pattern
+          {lightest, _, _} <- has(:_, :weight, min_weight)
+          _ <- gen(lightest, :is_lightest, true)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:apple, :weight, 5})
+        |> Rete.assert({:pea, :weight, 2})
+        |> Rete.assert({:watermelon, :weight, 10})
+
+      results = Rete.select(engine, :_, :is_lightest, true)
+      assert MapSet.size(results) == 1
+
+      [wme] = MapSet.to_list(results)
+      assert wme.subject == :pea
+    end
+
+    test "rule with aggregate and partition groups correctly" do
+      r =
+        rule :count_by_category do
+          # Match item with its category
+          {item, _, category} <- has(:_, :category, :_)
+          # Get weight for the SAME item (use item variable to constrain)
+          {_, _, weight} <- has(item, :weight, :_)
+          # Sum weights partitioned by category
+          total <- aggregate(&Enum.sum/1, over: weight, partition: [category])
+          _ <- gen(category, :total_weight, total)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:apple, :category, :fruit})
+        |> Rete.assert({:apple, :weight, 5})
+        |> Rete.assert({:banana, :category, :fruit})
+        |> Rete.assert({:banana, :weight, 3})
+        |> Rete.assert({:carrot, :category, :vegetable})
+        |> Rete.assert({:carrot, :weight, 2})
+
+      fruit_results = Rete.select(engine, :fruit, :total_weight, :_)
+      assert MapSet.size(fruit_results) == 1
+      [fruit_wme] = MapSet.to_list(fruit_results)
+      assert fruit_wme.object == 8
+
+      veg_results = Rete.select(engine, :vegetable, :total_weight, :_)
+      assert MapSet.size(veg_results) == 1
+      [veg_wme] = MapSet.to_list(veg_results)
+      assert veg_wme.object == 2
+    end
+  end
+
+  describe "rule macro - aggregate" do
+    test "rule with aggregate clause produces correct structure" do
+      r =
+        rule :with_aggregate do
+          {_item, _, weight} <- has(:_, :weight, :_)
+          min_weight <- aggregate(&Enum.min/1, over: weight)
+          _ <- gen(:result, :min, min_weight)
+        end
+
+      assert [%Has{}, %Aggregate{} = agg_clause] = r.forall
+      assert agg_clause.var == :min_weight
+      assert agg_clause.opts[:over] == %Var{name: :weight}
     end
   end
 
