@@ -2,20 +2,32 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   @moduledoc """
   Arrow syntax for building Wongi rules.
 
-  This module provides a `rule` macro that transforms arrow (`<-`) syntax
-  into RuleBuilder bind chains, giving a clean, readable syntax for rule
+  This module provides `rule` and `defrule` macros that transform arrow (`<-`)
+  syntax into RuleBuilder bind chains, giving a clean, readable syntax for rule
   definitions.
 
   ## Usage
 
       use Wongi.Engine.DSL.RuleBuilder.Syntax
 
+      # Inline rule
       rule :calculate_age do
         {user, _, name} <- has(:_, :users_name, :_)
         {_, _, dob} <- has(user, :users_dob, :_)
         age <- assign(fn token -> calculate_age(token[dob]) end)
         _ <- gen(user, :age, age)
       end
+
+      # Parameterized rule as a function
+      defrule process_entity(entity_type, output_pred) do
+        {entity, _, _} <- has(:_, :type, entity_type)
+        _ <- gen(entity, output_pred, true)
+      end
+
+      # Use the parameterized rule
+      engine
+      |> Rete.compile(process_entity(:person, :processed))
+      |> Rete.compile(process_entity(:order, :fulfilled))
 
   ## How It Works
 
@@ -49,7 +61,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
   defmacro __using__(_opts) do
     quote do
-      import Wongi.Engine.DSL.RuleBuilder.Syntax, only: [rule: 2]
+      import Wongi.Engine.DSL.RuleBuilder.Syntax, only: [rule: 2, defrule: 2]
       import Wongi.Engine.DSL.RuleBuilder.Compose
       import Wongi.Engine.DSL, only: [var: 1]
     end
@@ -66,10 +78,72 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
       end
   """
   defmacro rule(name, do: block) do
+    build_rule(name, block)
+  end
+
+  @doc """
+  Define a parameterized rule as a function.
+
+  This macro combines function definition with rule definition, making it easy
+  to create reusable, parameterized rules.
+
+  ## Example
+
+      defrule greet_by_type(entity_type) do
+        {entity, _, _} <- has(:_, :type, entity_type)
+        _ <- gen(entity, :greeted, true)
+      end
+
+      # Expands to:
+      def greet_by_type(entity_type) do
+        rule :greet_by_type do
+          {entity, _, _} <- has(:_, :type, entity_type)
+          _ <- gen(entity, :greeted, true)
+        end
+      end
+
+      # Usage:
+      engine
+      |> Rete.compile(greet_by_type(:person))
+      |> Rete.compile(greet_by_type(:robot))
+
+  ## Notes
+
+  - The rule name is automatically derived from the function name
+  - Function arguments can be used anywhere in the rule body
+  - Each call creates a new rule instance with the given parameters
+  """
+  defmacro defrule(call, do: block) do
+    {name, args} = extract_call(call)
+
+    quote do
+      def unquote(name)(unquote_splicing(args)) do
+        unquote(build_rule(name, block))
+      end
+    end
+  end
+
+  # Extract function name and arguments from a call AST
+  defp extract_call({name, _, args}) when is_atom(name) and is_list(args) do
+    {name, args}
+  end
+
+  defp extract_call({name, _, nil}) when is_atom(name) do
+    {name, []}
+  end
+
+  defp extract_call(other) do
+    raise ArgumentError,
+          "expected a function call like `my_rule(a, b)`, got: #{Macro.to_string(other)}"
+  end
+
+  # Build the rule AST (shared by rule/2 and defrule/2)
+  defp build_rule(name, block) do
     exprs = extract_exprs(block)
     {arrows, final} = split_arrows_and_final(exprs)
 
-    body = build_bind_chain(arrows, final, __CALLER__)
+    # Note: caller arg is passed but not currently used
+    body = build_bind_chain(arrows, final, nil)
 
     quote do
       unquote(body)

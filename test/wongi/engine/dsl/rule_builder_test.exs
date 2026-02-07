@@ -523,3 +523,128 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
     end
   end
 end
+
+defmodule Wongi.Engine.DSL.RuleBuilder.DefruleTest do
+  use ExUnit.Case, async: true
+  use Wongi.Engine.DSL.RuleBuilder.Syntax
+
+  alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.Var
+  alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.Rete
+
+  # Import filter functions
+  import Wongi.Engine.DSL, only: [greater: 2, var: 1]
+
+  # Define parameterized rules using defrule
+  defrule greet_by_type(entity_type) do
+    {entity, _, _} <- has(:_, :type, entity_type)
+    _ <- gen(entity, :greeted, true)
+  end
+
+  defrule mark_entity(entity_type, output_pred, output_value) do
+    {entity, _, _} <- has(:_, :type, entity_type)
+    _ <- gen(entity, output_pred, output_value)
+  end
+
+  defrule filter_by_threshold(pred, threshold) do
+    {entity, _, value} <- has(:_, pred, :_)
+    _ <- filter(greater(value, threshold))
+    _ <- gen(entity, :above_threshold, true)
+  end
+
+  defrule no_args_rule() do
+    {entity, _, _} <- has(:_, :exists, true)
+    _ <- gen(entity, :found, true)
+  end
+
+  describe "defrule macro" do
+    test "creates a function that returns a rule" do
+      rule = greet_by_type(:person)
+
+      assert rule.name == :greet_by_type
+      assert [%Has{} = has_clause] = rule.forall
+      assert has_clause.predicate == :type
+      assert has_clause.object == :person
+      assert [%Generator{}] = rule.actions
+    end
+
+    test "different parameters create different rules" do
+      rule1 = greet_by_type(:person)
+      rule2 = greet_by_type(:robot)
+
+      assert rule1.name == :greet_by_type
+      assert rule2.name == :greet_by_type
+
+      [has1] = rule1.forall
+      [has2] = rule2.forall
+
+      assert has1.object == :person
+      assert has2.object == :robot
+    end
+
+    test "multiple parameters work" do
+      rule = mark_entity(:order, :processed, :done)
+
+      assert rule.name == :mark_entity
+      [has_clause] = rule.forall
+      assert has_clause.object == :order
+
+      [gen] = rule.actions
+      assert gen.template.predicate == :processed
+      assert gen.template.object == :done
+    end
+
+    test "parameters can be used in filter expressions" do
+      rule = filter_by_threshold(:score, 100)
+
+      assert rule.name == :filter_by_threshold
+      # has + filter
+      assert length(rule.forall) == 2
+    end
+
+    test "zero-arg defrule works" do
+      rule = no_args_rule()
+
+      assert rule.name == :no_args_rule
+      assert [%Has{}] = rule.forall
+    end
+
+    test "defrule integrates with Rete engine" do
+      engine =
+        Rete.new()
+        |> Rete.compile(greet_by_type(:person))
+        |> Rete.assert({:alice, :type, :person})
+        |> Rete.assert({:robot1, :type, :robot})
+
+      # Only alice should be greeted (person type)
+      alice_greeted = Rete.select(engine, :alice, :greeted, true)
+      robot_greeted = Rete.select(engine, :robot1, :greeted, true)
+
+      assert MapSet.size(alice_greeted) == 1
+      assert MapSet.size(robot_greeted) == 0
+
+      # Now add the robot rule
+      engine =
+        engine
+        |> Rete.compile(greet_by_type(:robot))
+
+      robot_greeted = Rete.select(engine, :robot1, :greeted, true)
+      assert MapSet.size(robot_greeted) == 1
+    end
+
+    test "multiple defrule instances can coexist" do
+      engine =
+        Rete.new()
+        |> Rete.compile(mark_entity(:person, :human, true))
+        |> Rete.compile(mark_entity(:robot, :machine, true))
+        |> Rete.assert({:alice, :type, :person})
+        |> Rete.assert({:r2d2, :type, :robot})
+
+      assert MapSet.size(Rete.select(engine, :alice, :human, true)) == 1
+      assert MapSet.size(Rete.select(engine, :alice, :machine, true)) == 0
+      assert MapSet.size(Rete.select(engine, :r2d2, :machine, true)) == 1
+      assert MapSet.size(Rete.select(engine, :r2d2, :human, true)) == 0
+    end
+  end
+end
