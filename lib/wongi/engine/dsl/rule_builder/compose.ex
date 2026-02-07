@@ -44,6 +44,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.RuleBuilder
   alias Wongi.Engine.DSL.Var
+  alias Wongi.Engine.Filter.Function
 
   @doc """
   A matcher that passes if the specified fact is present in working memory.
@@ -149,6 +150,29 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
       end
 
     forall_clause(clause, :ok)
+  end
+
+  @doc """
+  A filter with a variable that gets resolved and passed to the function.
+
+  This is a convenience form that resolves the variable from the token and
+  passes its value to the arity-1 function.
+
+  ## Examples
+
+      # Instead of:
+      filter(fn token -> token[:age] > 18 end)
+
+      # You can write:
+      filter(age, fn age -> age > 18 end)
+
+      # Or with the Syntax macro:
+      {_, _, age} <- has(:_, :age, :_)
+      filter(age, fn a -> a > 18 end)
+  """
+  @spec filter(any(), (any() -> boolean())) :: RuleBuilder.t()
+  def filter(var, func) when is_function(func, 1) do
+    forall_clause(Filter.new(Function.new(var, func)), :ok)
   end
 
   @doc """
