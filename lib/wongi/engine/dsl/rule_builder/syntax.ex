@@ -140,10 +140,9 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   # Build the rule AST (shared by rule/2 and defrule/2)
   defp build_rule(name, block) do
     exprs = extract_exprs(block)
-    {arrows, final} = split_arrows_and_final(exprs)
 
     # Note: caller arg is passed but not currently used
-    body = build_bind_chain(arrows, final, nil)
+    body = build_bind_chain(exprs, nil)
 
     quote do
       unquote(body)
@@ -155,36 +154,46 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   defp extract_exprs({:__block__, _, exprs}), do: exprs
   defp extract_exprs(expr), do: [expr]
 
-  # Split into arrow expressions and final expression
-  defp split_arrows_and_final([]), do: {[], nil}
-
-  defp split_arrows_and_final(exprs) do
-    case List.last(exprs) do
-      {:<-, _, _} ->
-        # All expressions are arrows
-        {exprs, nil}
-
-      final ->
-        # Last expression is not an arrow
-        {Enum.drop(exprs, -1), final}
-    end
-  end
-
   # Build the nested bind chain
-  defp build_bind_chain([], nil, _caller) do
+  # Every expression in a rule block should be either:
+  # - An arrow expression: `pattern <- dsl_fn(...)` 
+  # - A bare DSL function call: `dsl_fn(...)`
+  # Both return RuleBuilder values that get chained together.
+
+  defp build_bind_chain([], _caller) do
+    # Empty rule - just return pure(:ok)
     quote do: RuleBuilder.pure(:ok)
   end
 
-  defp build_bind_chain([], final, _caller) do
-    quote do: RuleBuilder.pure(unquote(final))
+  defp build_bind_chain([{:<-, _, [pattern, rhs]}], _caller) do
+    # Last expression is an arrow - transform and return directly
+    transform_rhs(pattern, rhs, nil)
   end
 
-  defp build_bind_chain([{:<-, _, [pattern, rhs]} | rest], final, caller) do
+  defp build_bind_chain([expr], _caller) do
+    # Last expression is bare (no arrow) - pass through directly
+    # Must be a DSL function call that returns a RuleBuilder
+    expr
+  end
+
+  defp build_bind_chain([{:<-, _, [pattern, rhs]} | rest], caller) do
     transformed_rhs = transform_rhs(pattern, rhs, caller)
-    rest_chain = build_bind_chain(rest, final, caller)
+    rest_chain = build_bind_chain(rest, caller)
 
     quote do
       RuleBuilder.bind(unquote(transformed_rhs), fn unquote(pattern) ->
+        unquote(rest_chain)
+      end)
+    end
+  end
+
+  defp build_bind_chain([expr | rest], caller) do
+    # Bare expression (no arrow) followed by more expressions
+    # Bind it with a wildcard pattern since we don't need its value
+    rest_chain = build_bind_chain(rest, caller)
+
+    quote do
+      RuleBuilder.bind(unquote(expr), fn _ ->
         unquote(rest_chain)
       end)
     end

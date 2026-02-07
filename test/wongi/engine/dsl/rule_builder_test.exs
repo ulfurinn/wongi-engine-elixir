@@ -265,6 +265,69 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       assert [%Generator{}] = r.actions
     end
 
+    test "bare gen expression in final position (no arrow bind)" do
+      r =
+        rule :bare_gen do
+          {user, _, _name} <- has(:_, :name, :_)
+          gen(user, :greeted, true)
+        end
+
+      assert r.name == :bare_gen
+      assert [%Has{}] = r.forall
+      assert [%Generator{} = gen_action] = r.actions
+      assert gen_action.template.predicate == :greeted
+    end
+
+    test "bare filter expression in final position" do
+      r =
+        rule :bare_filter do
+          {_user, _, age} <- has(:_, :age, :_)
+          filter(greater(age, 18))
+        end
+
+      assert r.name == :bare_filter
+      assert [%Has{}, %Filter{}] = r.forall
+    end
+
+    test "multiple gens with last one bare" do
+      r =
+        rule :multi_gen_bare do
+          {user, _, _} <- has(:_, :active, true)
+          _ <- gen(user, :processed, true)
+          gen(user, :timestamp, :now)
+        end
+
+      assert length(r.actions) == 2
+      assert [gen1, gen2] = r.actions
+      assert gen1.template.predicate == :processed
+      assert gen2.template.predicate == :timestamp
+    end
+
+    test "bare expressions work in middle positions too" do
+      r =
+        rule :all_bare do
+          has(:alice, :type, :person)
+          neg(:alice, :deleted, true)
+          gen(:alice, :valid, true)
+        end
+
+      assert [%Has{}, %Neg{}] = r.forall
+      assert [%Generator{}] = r.actions
+    end
+
+    test "mixed arrow and bare expressions" do
+      r =
+        rule :mixed do
+          {user, _, _} <- has(:_, :type, :person)
+          neg(user, :deleted, true)
+          {_, _, name} <- has(user, :name, :_)
+          gen(user, :greeting, name)
+        end
+
+      assert [%Has{}, %Neg{}, %Has{}] = r.forall
+      assert [%Generator{}] = r.actions
+    end
+
     test "rule with multiple has clauses and variable reuse" do
       r =
         rule :multi_has do
