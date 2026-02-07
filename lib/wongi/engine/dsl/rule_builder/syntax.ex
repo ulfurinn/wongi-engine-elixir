@@ -245,6 +245,24 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     rhs
   end
 
+  defp transform_rhs(pattern, {:aggregate, meta, [fun, opts]}, _caller) do
+    # aggregate(fun, opts) -> aggregate(fun, var(:name), opts)
+    # Inject var from LHS pattern as the output variable
+    var_name = extract_single_var_name(pattern)
+
+    var_ast =
+      quote do
+        var(unquote(var_name))
+      end
+
+    {:aggregate, meta, [fun, var_ast, opts]}
+  end
+
+  defp transform_rhs(_pattern, {:aggregate, _meta, _args} = rhs, _caller) do
+    # aggregate already has 3 args, pass through unchanged
+    rhs
+  end
+
   defp transform_rhs(_pattern, {:gen, _meta, _args} = rhs, _caller) do
     # gen doesn't need var injection (uses already-bound variables)
     rhs
