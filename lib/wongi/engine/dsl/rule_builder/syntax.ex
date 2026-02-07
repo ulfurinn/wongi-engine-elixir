@@ -205,8 +205,11 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   defp maybe_inject_var(:_, {name, _, context})
        when is_atom(name) and is_atom(context) and name != :_ do
     # Pattern element is a variable, inject var(:name)
+    # Strip leading underscore - _name becomes :name for the Var
+    var_name = strip_underscore_prefix(name)
+
     quote do
-      var(unquote(name))
+      var(unquote(var_name))
     end
   end
 
@@ -217,11 +220,24 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
   # Extract variable name from a simple variable pattern
   defp extract_single_var_name({name, _, context}) when is_atom(name) and is_atom(context) do
-    name
+    # Strip leading underscore - _age becomes :age for the Var
+    strip_underscore_prefix(name)
   end
 
   defp extract_single_var_name(other) do
     raise ArgumentError,
           "expected a simple variable pattern for assign, got: #{Macro.to_string(other)}"
+  end
+
+  # Strip leading underscore from variable name
+  # This allows users to write `_name` to suppress unused variable warnings
+  # while still generating `var(:name)` for the Wongi rule
+  defp strip_underscore_prefix(name) when is_atom(name) do
+    name_str = Atom.to_string(name)
+
+    case name_str do
+      "_" <> rest when rest != "" -> String.to_atom(rest)
+      _ -> name
+    end
   end
 end
