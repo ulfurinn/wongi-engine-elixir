@@ -1,8 +1,17 @@
 defmodule Wongi.Engine.DSL.Assign do
   @moduledoc false
+  alias Wongi.Engine.DSL.Var
+
   defstruct [:name, :value]
 
-  def new(name, value), do: %__MODULE__{name: name, value: value}
+  @doc """
+  Create a new Assign clause.
+
+  The `name` can be an atom or a `%Var{}` struct. If a Var struct is provided,
+  the atom name is extracted for storage in the token.
+  """
+  def new(%Var{name: name}, value), do: %__MODULE__{name: name, value: value}
+  def new(name, value) when is_atom(name), do: %__MODULE__{name: name, value: value}
 
   defimpl Wongi.Engine.DSL.Clause do
     import Wongi.Engine.Compiler
