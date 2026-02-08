@@ -44,6 +44,16 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
       assert is_reference(rule.ref)
     end
 
+    test "bind raises helpful error when continuation doesn't return RuleBuilder" do
+      assert_raise ArgumentError,
+                   ~r/bind continuation must return a RuleBuilder, got: 2/,
+                   fn ->
+                     RuleBuilder.pure(1)
+                     |> RuleBuilder.bind(fn x -> x + 1 end)
+                     |> RuleBuilder.run(:bad_rule)
+                   end
+    end
+
     test "run reverses forall and actions lists" do
       # Manually build a rule with multiple clauses to verify ordering
       builder =

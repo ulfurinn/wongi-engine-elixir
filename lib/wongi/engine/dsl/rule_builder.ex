@@ -74,8 +74,15 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
     %__MODULE__{
       run: fn rule ->
         {result, rule1} = run_a.(rule)
-        %__MODULE__{run: run_b} = cont_fn.(result)
-        run_b.(rule1)
+
+        case cont_fn.(result) do
+          %__MODULE__{run: run_b} ->
+            run_b.(rule1)
+
+          other ->
+            raise ArgumentError,
+                  "bind continuation must return a RuleBuilder, got: #{inspect(other)}"
+        end
       end
     }
   end
