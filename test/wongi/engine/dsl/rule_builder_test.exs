@@ -604,6 +604,36 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       assert [action_fn] = r.actions
       assert is_function(action_fn, 2)
     end
+
+    test "rule with pure = assignment" do
+      threshold = 100
+
+      r =
+        rule :with_assignment do
+          {entity, _, value} <- has(:_, :value, :_)
+          doubled = threshold * 2
+          filter(greater(value, doubled))
+          _ <- gen(entity, :above_double_threshold, true)
+        end
+
+      assert [%Has{}, %Filter{}] = r.forall
+      assert [%Generator{}] = r.actions
+    end
+
+    test "rule with multiple = assignments" do
+      r =
+        rule :multi_assign do
+          {entity, _, _} <- has(:_, :type, :widget)
+          prefix = "processed"
+          suffix = "_done"
+          tag = prefix <> suffix
+          _ <- gen(entity, :status, tag)
+        end
+
+      assert [%Has{}] = r.forall
+      assert [%Generator{} = gen] = r.actions
+      assert gen.template.object == "processed_done"
+    end
   end
 
   describe "rule macro - complex rules" do

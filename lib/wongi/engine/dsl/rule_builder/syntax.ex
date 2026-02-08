@@ -42,6 +42,9 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   3. **Bind chaining**: Each arrow becomes a nested bind, threading the rule
      state through the computation.
 
+  4. **Pure assignments**: Regular `=` bindings are preserved as plain Elixir
+     assignments (no monadic bind), useful for intermediate computations.
+
   ## Pattern Rules
 
   - `user` (bare variable) at position with `:_` → inject `var(:user)`
@@ -243,6 +246,16 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
       RuleBuilder.bind(unquote(transformed_rhs), fn unquote(pattern) ->
         unquote(rest_chain)
       end)
+    end
+  end
+
+  defp build_bind_chain([{:=, meta, [lhs, rhs]} | rest], caller) do
+    # Pure Elixir assignment - no monadic bind, just regular =
+    rest_chain = build_bind_chain(rest, caller)
+
+    quote do
+      unquote({:=, meta, [lhs, rhs]})
+      unquote(rest_chain)
     end
   end
 
