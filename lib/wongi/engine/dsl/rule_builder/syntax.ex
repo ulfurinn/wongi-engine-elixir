@@ -2,9 +2,9 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
   @moduledoc """
   Arrow syntax for building Wongi rules.
 
-  This module provides `rule` and `defrule` macros that transform arrow (`<-`)
-  syntax into RuleBuilder bind chains, giving a clean, readable syntax for rule
-  definitions.
+  This module provides `rule`, `defrule`, and `defrulep` macros that transform
+  arrow (`<-`) syntax into RuleBuilder bind chains, giving a clean, readable
+  syntax for rule definitions.
 
   ## Usage
 
@@ -74,7 +74,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
   defmacro __using__(_opts) do
     quote do
-      import Wongi.Engine.DSL.RuleBuilder.Syntax, only: [rule: 2, defrule: 2]
+      import Wongi.Engine.DSL.RuleBuilder.Syntax, only: [rule: 2, defrule: 2, defrulep: 2]
     end
   end
 
@@ -129,6 +129,34 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
 
     quote do
       def unquote(name)(unquote_splicing(args)) do
+        unquote(build_rule(name, block))
+      end
+    end
+  end
+
+  @doc """
+  Define a parameterized rule as a private function.
+
+  Same as `defrule/2` but generates a `defp` instead of `def`.
+
+  ## Example
+
+      defrulep internal_rule(threshold) do
+        {entity, _, value} <- has(:_, :value, :_)
+        filter(greater(value, threshold))
+        _ <- gen(entity, :above_threshold, true)
+      end
+
+      # Can only be called within this module
+      def build_rules(engine) do
+        Rete.compile(engine, internal_rule(100))
+      end
+  """
+  defmacro defrulep(call, do: block) do
+    {name, args} = extract_call(call)
+
+    quote do
+      defp unquote(name)(unquote_splicing(args)) do
         unquote(build_rule(name, block))
       end
     end

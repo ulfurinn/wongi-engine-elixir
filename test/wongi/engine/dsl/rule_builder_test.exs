@@ -1271,6 +1271,17 @@ defmodule Wongi.Engine.DSL.RuleBuilder.DefruleTest do
     _ <- gen(entity, :found, true)
   end
 
+  # Private rule for testing defrulep
+  defrulep private_rule(entity_type) do
+    {entity, _, _} <- has(:_, :type, entity_type)
+    _ <- gen(entity, :privately_processed, true)
+  end
+
+  # Public function that uses the private rule
+  def use_private_rule(entity_type) do
+    private_rule(entity_type)
+  end
+
   describe "defrule macro" do
     test "creates a function that returns a rule" do
       rule = greet_by_type(:person)
@@ -1358,6 +1369,28 @@ defmodule Wongi.Engine.DSL.RuleBuilder.DefruleTest do
       assert MapSet.size(Rete.select(engine, :alice, :machine, true)) == 0
       assert MapSet.size(Rete.select(engine, :r2d2, :machine, true)) == 1
       assert MapSet.size(Rete.select(engine, :r2d2, :human, true)) == 0
+    end
+  end
+
+  describe "defrulep macro" do
+    test "creates a private function that returns a rule" do
+      # Call via the public wrapper since private_rule is defp
+      rule = use_private_rule(:widget)
+
+      assert rule.name == :private_rule
+      assert [%Has{} = has_clause] = rule.forall
+      assert has_clause.object == :widget
+      assert [%Generator{}] = rule.actions
+    end
+
+    test "defrulep integrates with Rete engine" do
+      engine =
+        Rete.new()
+        |> Rete.compile(use_private_rule(:gadget))
+        |> Rete.assert({:item1, :type, :gadget})
+
+      results = Rete.select(engine, :item1, :privately_processed, true)
+      assert MapSet.size(results) == 1
     end
   end
 end
