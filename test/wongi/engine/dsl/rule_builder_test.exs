@@ -207,6 +207,33 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
     end
   end
 
+  describe "Compose.action/1" do
+    test "adds binary function action" do
+      action_fn = fn _token, rete -> rete end
+      builder = Compose.action(action_fn)
+      rule = RuleBuilder.run(builder, :test)
+
+      assert [^action_fn] = rule.actions
+    end
+
+    test "adds ternary function action" do
+      action_fn = fn _action, _token, rete -> rete end
+      builder = Compose.action(action_fn)
+      rule = RuleBuilder.run(builder, :test)
+
+      assert [^action_fn] = rule.actions
+    end
+
+    test "yields :ok" do
+      Compose.action(fn _token, rete -> rete end)
+      |> RuleBuilder.bind(fn result ->
+        assert result == :ok
+        RuleBuilder.pure(:ok)
+      end)
+      |> RuleBuilder.run(:test)
+    end
+  end
+
   describe "Compose.extract_vars/1" do
     test "extracts var names from a Var struct" do
       vars = Compose.extract_vars(var(:foo))
@@ -541,6 +568,42 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       assert gen1.template.predicate == :processed
       assert gen2.template.predicate == :timestamp
     end
+
+    test "rule with binary action function" do
+      r =
+        rule :with_action do
+          {_user, _, _} <- has(:_, :active, true)
+          action(fn _token, rete -> rete end)
+        end
+
+      assert [%Has{}] = r.forall
+      assert [action_fn] = r.actions
+      assert is_function(action_fn, 2)
+    end
+
+    test "rule with ternary action function" do
+      r =
+        rule :with_ternary_action do
+          {_user, _, _} <- has(:_, :active, true)
+          action(fn _action, _token, rete -> rete end)
+        end
+
+      assert [%Has{}] = r.forall
+      assert [action_fn] = r.actions
+      assert is_function(action_fn, 3)
+    end
+
+    test "rule with action using arrow bind" do
+      r =
+        rule :action_arrow do
+          {_user, _, _} <- has(:_, :active, true)
+          _ <- action(fn _token, rete -> rete end)
+        end
+
+      assert [%Has{}] = r.forall
+      assert [action_fn] = r.actions
+      assert is_function(action_fn, 2)
+    end
   end
 
   describe "rule macro - complex rules" do
@@ -666,6 +729,52 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
       # Only alice (age 25) should match
       assert MapSet.size(Rete.select(engine, :alice, :adult, :_)) == 1
       assert MapSet.size(Rete.select(engine, :bob, :adult, :_)) == 0
+    end
+
+    test "rule with binary action function executes on assert" do
+      test_pid = self()
+
+      r =
+        rule :action_test do
+          {user, _, _} <- has(:_, :active, true)
+
+          action(fn token, rete ->
+            send(test_pid, {:executed, token[user]})
+            rete
+          end)
+        end
+
+      _engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:alice, :active, true})
+
+      assert_received {:executed, :alice}
+    end
+
+    test "rule with ternary action function handles execute and deexecute" do
+      test_pid = self()
+
+      r =
+        rule :ternary_action_test do
+          {user, _, _} <- has(:_, :active, true)
+
+          action(fn action_type, token, rete ->
+            send(test_pid, {action_type, token[user]})
+            rete
+          end)
+        end
+
+      engine =
+        Rete.new()
+        |> Rete.compile(r)
+        |> Rete.assert({:alice, :active, true})
+
+      assert_received {:execute, :alice}
+
+      _engine = Rete.retract(engine, {:alice, :active, true})
+
+      assert_received {:deexecute, :alice}
     end
 
     test "rule with aggregate computes min correctly" do

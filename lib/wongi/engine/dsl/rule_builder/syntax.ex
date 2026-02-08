@@ -319,6 +319,11 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Syntax do
     rhs
   end
 
+  defp transform_rhs(_pattern, {:action, _meta, _args} = rhs, _caller) do
+    # action doesn't need transformation (takes a function directly)
+    rhs
+  end
+
   defp transform_rhs(_pattern, {:ncc, meta, [[do: block]]}, caller) do
     # ncc do...end - transform the block using normal arrow transformation
     # and wrap in Compose.ncc(...)

@@ -342,6 +342,49 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
     action_clause(Generator.new(fun))
   end
 
+  @doc """
+  An action that calls a function when the rule fires.
+
+  Unlike `gen/1` which expects a function that returns WMEs, `action/1` takes
+  a raw function that receives the token and rete engine directly.
+
+  ## 2-arity function (execute only)
+
+  Called only when the rule fires (on assertion). Useful for side effects.
+
+      action(fn token, rete ->
+        Logger.info("Rule fired with \#{inspect(token)}")
+        rete  # Return rete (or modified rete)
+      end)
+
+  ## 3-arity function (execute + deexecute)
+
+  Called with `:execute` on assertion and `:deexecute` on retraction.
+  Useful for maintaining external state that needs cleanup.
+
+      action(fn action, token, rete ->
+        case action do
+          :execute ->
+            ExternalSystem.add(token[:user])
+            rete
+          :deexecute ->
+            ExternalSystem.remove(token[:user])
+            rete
+        end
+      end)
+
+  ## Return Value
+
+  The function may return a `%Rete{}` struct to update the engine state,
+  or any other value (which will be ignored, keeping the original rete).
+
+  Yields `:ok`.
+  """
+  @spec action(function()) :: RuleBuilder.t()
+  def action(fun) when is_function(fun, 2) or is_function(fun, 3) do
+    action_clause(fun)
+  end
+
   # Private helpers
 
   defp forall_clause(clause, binding) do
