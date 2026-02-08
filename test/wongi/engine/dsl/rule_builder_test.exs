@@ -54,6 +54,14 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
                    end
     end
 
+    test "bind raises helpful error when first argument isn't a RuleBuilder" do
+      assert_raise ArgumentError,
+                   ~r/bind expects a RuleBuilder as first argument, got: :not_a_builder/,
+                   fn ->
+                     RuleBuilder.bind(:not_a_builder, fn _ -> RuleBuilder.pure(:ok) end)
+                   end
+    end
+
     test "run reverses forall and actions lists" do
       # Manually build a rule with multiple clauses to verify ordering
       builder =

@@ -87,6 +87,11 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
     }
   end
 
+  def bind(not_a_builder, cont_fn) when is_function(cont_fn, 1) do
+    raise ArgumentError,
+          "bind expects a RuleBuilder as first argument, got: #{inspect(not_a_builder)}"
+  end
+
   @doc """
   Executes a RuleBuilder chain and produces a finalized Rule struct.
 
