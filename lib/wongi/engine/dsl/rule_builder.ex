@@ -3,7 +3,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   Composable rule builder using state-threading pattern.
 
   This module provides the core building blocks for constructing Wongi rules
-  in a composable way. It threads a `%Rule{}` struct through a series of
+  in a composable way. It threads a `%RuleBuilderState{}` struct through a series of
   operations, each of which can add clauses and produce values for subsequent
   operations.
 
@@ -11,10 +11,10 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
 
   ## How it works
 
-  A `%RuleBuilder{}` wraps a function `Rule -> {result, Rule}`. When composed
-  with `bind/2`, each step receives the result from the previous step and
-  can modify the Rule state. Finally, `run/2` executes the chain with an
-  initial Rule and returns the completed Rule struct.
+  A `%RuleBuilder{}` wraps a function `RuleBuilderState -> {result, RuleBuilderState}`. 
+  When composed with `bind/2`, each step receives the result from the previous step and
+  can modify the state. Finally, `run/2` executes the chain with an initial state and 
+  returns the completed Rule struct (extracted from the final state).
 
   ## Example
 
@@ -29,10 +29,11 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   """
 
   alias Wongi.Engine.DSL.Rule
+  alias Wongi.Engine.DSL.RuleBuilderState
 
   defstruct [:run]
 
-  @type t :: %__MODULE__{run: (Rule.t() -> {any(), Rule.t()})}
+  @type t :: %__MODULE__{run: (RuleBuilderState.t() -> {any(), RuleBuilderState.t()})}
 
   @doc """
   Wraps a value in a RuleBuilder without modifying the Rule state.
@@ -49,7 +50,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   """
   @spec pure(any()) :: t()
   def pure(value) do
-    %__MODULE__{run: fn rule -> {value, rule} end}
+    %__MODULE__{run: fn state -> {value, state} end}
   end
 
   @doc """
@@ -72,12 +73,12 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   @spec bind(t(), (any() -> t())) :: t()
   def bind(%__MODULE__{run: run_a}, cont_fn) when is_function(cont_fn, 1) do
     %__MODULE__{
-      run: fn rule ->
-        {result, rule1} = run_a.(rule)
+      run: fn state ->
+        {result, state1} = run_a.(state)
 
         case cont_fn.(result) do
           %__MODULE__{run: run_b} ->
-            run_b.(rule1)
+            run_b.(state1)
 
           other ->
             raise ArgumentError,
@@ -109,16 +110,20 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   """
   @spec run(t(), atom()) :: Rule.t()
   def run(%__MODULE__{run: run_fn}, name) do
-    initial = %Rule{
+    initial_rule = %Rule{
       ref: make_ref(),
       name: name,
       forall: [],
-      actions: [],
+      actions: []
+    }
+
+    initial_state = %RuleBuilderState{
+      rule: initial_rule,
       mode: :full,
       bound_vars: MapSet.new()
     }
 
-    {_final_value, rule} = run_fn.(initial)
+    {_final_value, %RuleBuilderState{rule: rule}} = run_fn.(initial_state)
     %{rule | forall: Enum.reverse(rule.forall), actions: Enum.reverse(rule.actions)}
   end
 
@@ -143,16 +148,20 @@ defmodule Wongi.Engine.DSL.RuleBuilder do
   """
   @spec run_matcher_only(t()) :: {list(), MapSet.t(atom())}
   def run_matcher_only(%__MODULE__{run: run_fn}) do
-    initial = %Rule{
+    initial_rule = %Rule{
       ref: nil,
       name: nil,
       forall: [],
-      actions: [],
+      actions: []
+    }
+
+    initial_state = %RuleBuilderState{
+      rule: initial_rule,
       mode: :matcher_only,
       bound_vars: MapSet.new()
     }
 
-    {_final_value, rule} = run_fn.(initial)
-    {Enum.reverse(rule.forall), rule.bound_vars}
+    {_final_value, %RuleBuilderState{rule: rule, bound_vars: bound_vars}} = run_fn.(initial_state)
+    {Enum.reverse(rule.forall), bound_vars}
   end
 end
