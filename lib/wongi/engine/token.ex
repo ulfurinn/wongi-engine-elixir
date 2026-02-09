@@ -4,6 +4,7 @@ defmodule Wongi.Engine.Token do
   An intermediate data structure representing a partial match.
   """
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.WME
 
   @type t() :: %__MODULE__{}
@@ -31,8 +32,10 @@ defmodule Wongi.Engine.Token do
   end
 
   @doc "Returns the value of a bound variable."
-  @spec fetch(t(), atom()) :: {:ok, any()} | :error
-  def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) do
+  @spec fetch(t(), atom() | Var.t()) :: {:ok, any()} | :error
+  def fetch(%__MODULE__{} = token, %Var{name: name}), do: fetch(token, name)
+
+  def fetch(%__MODULE__{assignments: assignments, parents: parents}, var) when is_atom(var) do
     case Map.fetch(assignments, var) do
       {:ok, _value} = ok ->
         ok
@@ -48,11 +51,16 @@ defmodule Wongi.Engine.Token do
   end
 
   @doc false
+  def fetch(%__MODULE__{} = token, %Var{name: name}, extra_assignments) do
+    fetch(token, name, extra_assignments)
+  end
+
   def fetch(
         %__MODULE__{} = token,
         var,
         extra_assignments
-      ) do
+      )
+      when is_atom(var) do
     case Map.fetch(extra_assignments, var) do
       {:ok, value} ->
         {:ok, value}
