@@ -332,16 +332,17 @@ end
 ## Implementation
 
 The implementation uses a State monad pattern:
-- `RuleBuilder` struct wraps a function `Rule -> {value, Rule}`
+- `RuleBuilder` struct wraps a function `RuleBuilderState -> {value, RuleBuilderState}`
+- `RuleBuilderState` holds the Rule being built, plus builder-internal fields (`mode`, `bound_vars`)
 - DSL functions (`has`, `neg`, `gen`, etc.) return `RuleBuilder` values
-- `bind` chains operations, threading the Rule state
-- `run` executes the chain and produces the final `%Rule{}`
+- `bind` chains operations, threading the RuleBuilderState
+- `run` executes the chain and produces the final `%Rule{}` (without builder-internal fields)
 
 ### Matcher-Only Mode for NCC and Any
 
 Both `ncc` and `any` contain subchains that should only have matchers (no actions). The RuleBuilder supports this via:
 
-1. **Mode field**: `Rule` struct has `mode: :full | :matcher_only`
+1. **Mode field**: `RuleBuilderState` struct has `mode: :full | :matcher_only` (internal to RuleBuilder, not exposed on final Rule)
 2. **Action validation**: `gen` and other actions check mode and raise if `:matcher_only`
 3. **`run_matcher_only/1`**: Executes a builder in matcher-only mode, returning `{clauses, bound_vars}`
 
@@ -355,7 +356,7 @@ end
 
 ### Variable Tracking
 
-The `Rule` struct tracks `bound_vars` (a MapSet of atom names) accumulated from each clause's yielded bindings. This enables `any` to collect all variables from all branches and return them as a map:
+`RuleBuilderState` tracks `bound_vars` (a MapSet of atom names) during rule construction. This is internal builder state, not exposed on the final Rule struct. The tracking enables `any` to collect all variables from all branches and return them as a map:
 
 ```elixir
 # Compose.any/1 collects vars from all branches:
