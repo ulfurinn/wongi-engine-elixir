@@ -41,6 +41,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   alias Wongi.Engine.DSL.Neg
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.RuleBuilder
+  alias Wongi.Engine.DSL.Var
 
   @doc """
   A matcher that passes if the specified fact is present in working memory.
@@ -218,18 +219,28 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
     %RuleBuilder{
       run: fn rule ->
         check_forall_phase!(rule)
-        {binding, %{rule | forall: [clause | rule.forall]}}
+        new_vars = extract_vars(binding)
+        updated_vars = MapSet.union(rule.bound_vars, new_vars)
+        {binding, %{rule | forall: [clause | rule.forall], bound_vars: updated_vars}}
       end
     }
   end
 
   defp action_clause(action) do
     %RuleBuilder{
-      run: fn %Rule{actions: actions} = rule ->
+      run: fn %Rule{actions: actions, mode: mode} = rule ->
+        check_actions_allowed!(mode)
         {:ok, %{rule | actions: [action | actions]}}
       end
     }
   end
+
+  defp check_actions_allowed!(:matcher_only) do
+    raise ArgumentError,
+          "actions are not allowed in matcher-only mode (inside any/ncc clauses)"
+  end
+
+  defp check_actions_allowed!(:full), do: :ok
 
   defp check_forall_phase!(%Rule{actions: [_ | _]}) do
     raise ArgumentError,
@@ -237,4 +248,42 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   end
 
   defp check_forall_phase!(_rule), do: :ok
+
+  @doc """
+  Extracts all Var names from a term (recursively searching tuples, lists, maps).
+
+  Returns a MapSet of atom names.
+
+  ## Examples
+
+      iex> extract_vars({var(:x), :foo, var(:y)})
+      MapSet.new([:x, :y])
+
+      iex> extract_vars(:literal)
+      MapSet.new()
+  """
+  @spec extract_vars(any()) :: MapSet.t(atom())
+  def extract_vars(term) do
+    do_extract_vars(term, MapSet.new())
+  end
+
+  defp do_extract_vars(%Var{name: name}, acc), do: MapSet.put(acc, name)
+
+  defp do_extract_vars(tuple, acc) when is_tuple(tuple) do
+    tuple
+    |> Tuple.to_list()
+    |> Enum.reduce(acc, &do_extract_vars/2)
+  end
+
+  defp do_extract_vars(list, acc) when is_list(list) do
+    Enum.reduce(list, acc, &do_extract_vars/2)
+  end
+
+  defp do_extract_vars(%{} = map, acc) do
+    map
+    |> Map.values()
+    |> Enum.reduce(acc, &do_extract_vars/2)
+  end
+
+  defp do_extract_vars(_other, acc), do: acc
 end

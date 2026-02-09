@@ -182,6 +182,116 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
     end
   end
 
+  describe "Compose.extract_vars/1" do
+    test "extracts var names from a Var struct" do
+      vars = Compose.extract_vars(var(:foo))
+      assert MapSet.equal?(vars, MapSet.new([:foo]))
+    end
+
+    test "extracts var names from a tuple" do
+      vars = Compose.extract_vars({var(:x), :foo, var(:y)})
+      assert MapSet.equal?(vars, MapSet.new([:x, :y]))
+    end
+
+    test "extracts var names from nested structures" do
+      vars = Compose.extract_vars({var(:a), [var(:b), var(:c)], %{key: var(:d)}})
+      assert MapSet.equal?(vars, MapSet.new([:a, :b, :c, :d]))
+    end
+
+    test "returns empty set for literals" do
+      vars = Compose.extract_vars(:literal)
+      assert MapSet.equal?(vars, MapSet.new())
+    end
+
+    test "returns empty set for terms without vars" do
+      vars = Compose.extract_vars({:foo, :bar, 123})
+      assert MapSet.equal?(vars, MapSet.new())
+    end
+  end
+
+  describe "bound_vars tracking" do
+    test "has clause tracks bound vars from binding tuple" do
+      builder = Compose.has(var(:user), :name, var(:name))
+      rule = RuleBuilder.run(builder, :test)
+
+      assert MapSet.equal?(rule.bound_vars, MapSet.new([:user, :name]))
+    end
+
+    test "multiple clauses accumulate bound vars" do
+      builder =
+        Compose.has(var(:user), :name, var(:name))
+        |> RuleBuilder.bind(fn _ ->
+          Compose.has(var(:user), :age, var(:age))
+        end)
+
+      rule = RuleBuilder.run(builder, :test)
+
+      assert MapSet.equal?(rule.bound_vars, MapSet.new([:user, :name, :age]))
+    end
+
+    test "neg clause yields :ok so tracks no new vars" do
+      builder = Compose.neg(var(:user), :deleted, true)
+      rule = RuleBuilder.run(builder, :test)
+
+      # neg yields :ok, not a binding tuple, so no vars tracked
+      assert MapSet.equal?(rule.bound_vars, MapSet.new())
+    end
+
+    test "assign clause tracks the assigned var" do
+      builder = Compose.assign(var(:computed), fn _ -> 42 end)
+      rule = RuleBuilder.run(builder, :test)
+
+      assert MapSet.equal?(rule.bound_vars, MapSet.new([:computed]))
+    end
+  end
+
+  describe "run_matcher_only/1" do
+    test "extracts clauses from a simple builder" do
+      builder = Compose.has(var(:x), :foo, var(:y))
+      {clauses, vars} = RuleBuilder.run_matcher_only(builder)
+
+      assert length(clauses) == 1
+      assert [%Has{}] = clauses
+      assert MapSet.equal?(vars, MapSet.new([:x, :y]))
+    end
+
+    test "extracts multiple clauses in order" do
+      builder =
+        Compose.has(var(:a), :pred1, var(:b))
+        |> RuleBuilder.bind(fn _ ->
+          Compose.has(var(:c), :pred2, var(:d))
+        end)
+
+      {clauses, vars} = RuleBuilder.run_matcher_only(builder)
+
+      assert length(clauses) == 2
+      assert [first, second] = clauses
+      assert first.predicate == :pred1
+      assert second.predicate == :pred2
+      assert MapSet.equal?(vars, MapSet.new([:a, :b, :c, :d]))
+    end
+
+    test "raises error when action is used in matcher_only mode" do
+      builder =
+        Compose.has(var(:x), :foo, var(:y))
+        |> RuleBuilder.bind(fn _ ->
+          Compose.gen(var(:x), :bar, true)
+        end)
+
+      assert_raise ArgumentError, ~r/actions are not allowed in matcher-only mode/, fn ->
+        RuleBuilder.run_matcher_only(builder)
+      end
+    end
+
+    test "raises error for gen with function in matcher_only mode" do
+      builder = Compose.gen(fn _token -> {:s, :p, :o} end)
+
+      assert_raise ArgumentError, ~r/actions are not allowed in matcher-only mode/, fn ->
+        RuleBuilder.run_matcher_only(builder)
+      end
+    end
+  end
+
   describe "phase validation" do
     test "raises error when adding has after gen" do
       assert_raise ArgumentError, ~r/forall clause after actions/, fn ->
