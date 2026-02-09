@@ -1,18 +1,18 @@
 defmodule Wongi.Engine.DSL.RuleBuilderTest do
   use ExUnit.Case, async: true
 
-  alias Wongi.Engine.DSL.RuleBuilder
-  alias Wongi.Engine.DSL.RuleBuilder.Compose
-  alias Wongi.Engine.DSL.Rule
-  alias Wongi.Engine.DSL.Has
-  alias Wongi.Engine.DSL.Neg
+  import Wongi.Engine.DSL, only: [var: 1, greater: 2]
+
+  alias Wongi.Engine.Action.Generator
   alias Wongi.Engine.DSL.Assign
   alias Wongi.Engine.DSL.Filter
+  alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.Neg
+  alias Wongi.Engine.DSL.Rule
+  alias Wongi.Engine.DSL.RuleBuilder
+  alias Wongi.Engine.DSL.RuleBuilder.Compose
   alias Wongi.Engine.DSL.Var
-  alias Wongi.Engine.Action.Generator
   alias Wongi.Engine.Rete
-
-  import Wongi.Engine.DSL, only: [var: 1, greater: 2]
 
   describe "RuleBuilder core" do
     test "pure wraps value without modifying state" do
@@ -239,16 +239,16 @@ defmodule Wongi.Engine.DSL.RuleBuilder.SyntaxTest do
   use ExUnit.Case, async: true
   use Wongi.Engine.DSL.RuleBuilder.Syntax
 
-  alias Wongi.Engine.DSL.Has
-  alias Wongi.Engine.DSL.Neg
-  alias Wongi.Engine.DSL.Assign
-  alias Wongi.Engine.DSL.Filter
-  alias Wongi.Engine.DSL.Var
-  alias Wongi.Engine.Action.Generator
-  alias Wongi.Engine.Rete
-
   # Import filter functions for use in tests (var: 1 is already imported by use Syntax)
   import Wongi.Engine.DSL, only: [greater: 2, var: 1]
+
+  alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Assign
+  alias Wongi.Engine.DSL.Filter
+  alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.Neg
+  alias Wongi.Engine.DSL.Var
+  alias Wongi.Engine.Rete
 
   describe "rule macro - basic" do
     test "simple rule with single has clause" do
@@ -591,13 +591,13 @@ defmodule Wongi.Engine.DSL.RuleBuilder.DefruleTest do
   use ExUnit.Case, async: true
   use Wongi.Engine.DSL.RuleBuilder.Syntax
 
-  alias Wongi.Engine.DSL.Has
-  alias Wongi.Engine.DSL.Var
-  alias Wongi.Engine.Action.Generator
-  alias Wongi.Engine.Rete
-
   # Import filter functions
   import Wongi.Engine.DSL, only: [greater: 2, var: 1]
+
+  alias Wongi.Engine.Action.Generator
+  alias Wongi.Engine.DSL.Has
+  alias Wongi.Engine.DSL.Var
+  alias Wongi.Engine.Rete
 
   # Define parameterized rules using defrule
   defrule greet_by_type(entity_type) do
