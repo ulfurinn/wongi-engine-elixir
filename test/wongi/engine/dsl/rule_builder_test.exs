@@ -264,9 +264,9 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
   describe "bound_vars tracking" do
     test "has clause tracks bound vars from binding tuple" do
       builder = Compose.has(var(:user), :name, var(:name))
-      rule = RuleBuilder.run(builder, :test)
+      {_clauses, bound_vars} = RuleBuilder.run_matcher_only(builder)
 
-      assert MapSet.equal?(rule.bound_vars, MapSet.new([:user, :name]))
+      assert MapSet.equal?(bound_vars, MapSet.new([:user, :name]))
     end
 
     test "multiple clauses accumulate bound vars" do
@@ -276,24 +276,24 @@ defmodule Wongi.Engine.DSL.RuleBuilderTest do
           Compose.has(var(:user), :age, var(:age))
         end)
 
-      rule = RuleBuilder.run(builder, :test)
+      {_clauses, bound_vars} = RuleBuilder.run_matcher_only(builder)
 
-      assert MapSet.equal?(rule.bound_vars, MapSet.new([:user, :name, :age]))
+      assert MapSet.equal?(bound_vars, MapSet.new([:user, :name, :age]))
     end
 
     test "neg clause yields :ok so tracks no new vars" do
       builder = Compose.neg(var(:user), :deleted, true)
-      rule = RuleBuilder.run(builder, :test)
+      {_clauses, bound_vars} = RuleBuilder.run_matcher_only(builder)
 
       # neg yields :ok, not a binding tuple, so no vars tracked
-      assert MapSet.equal?(rule.bound_vars, MapSet.new())
+      assert MapSet.equal?(bound_vars, MapSet.new())
     end
 
     test "assign clause tracks the assigned var" do
       builder = Compose.assign(var(:computed), fn _ -> 42 end)
-      rule = RuleBuilder.run(builder, :test)
+      {_clauses, bound_vars} = RuleBuilder.run_matcher_only(builder)
 
-      assert MapSet.equal?(rule.bound_vars, MapSet.new([:computed]))
+      assert MapSet.equal?(bound_vars, MapSet.new([:computed]))
     end
   end
 
