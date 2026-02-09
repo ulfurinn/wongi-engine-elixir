@@ -43,6 +43,7 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
   alias Wongi.Engine.DSL.Neg
   alias Wongi.Engine.DSL.Rule
   alias Wongi.Engine.DSL.RuleBuilder
+  alias Wongi.Engine.DSL.RuleBuilderState
   alias Wongi.Engine.DSL.Var
   alias Wongi.Engine.Filter.Function
 
@@ -389,20 +390,22 @@ defmodule Wongi.Engine.DSL.RuleBuilder.Compose do
 
   defp forall_clause(clause, binding) do
     %RuleBuilder{
-      run: fn rule ->
+      run: fn %RuleBuilderState{rule: rule, bound_vars: bound_vars} = state ->
         check_forall_phase!(rule)
         new_vars = extract_vars(binding)
-        updated_vars = MapSet.union(rule.bound_vars, new_vars)
-        {binding, %{rule | forall: [clause | rule.forall], bound_vars: updated_vars}}
+        updated_vars = MapSet.union(bound_vars, new_vars)
+        updated_rule = %{rule | forall: [clause | rule.forall]}
+        {binding, %{state | rule: updated_rule, bound_vars: updated_vars}}
       end
     }
   end
 
   defp action_clause(action) do
     %RuleBuilder{
-      run: fn %Rule{actions: actions, mode: mode} = rule ->
+      run: fn %RuleBuilderState{rule: rule, mode: mode} = state ->
         check_actions_allowed!(mode)
-        {:ok, %{rule | actions: [action | actions]}}
+        updated_rule = %{rule | actions: [action | rule.actions]}
+        {:ok, %{state | rule: updated_rule}}
       end
     }
   end
