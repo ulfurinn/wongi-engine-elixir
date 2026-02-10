@@ -1,10 +1,11 @@
 defmodule Wongi.Engine.DSL.Aggregate do
   @moduledoc false
+  alias Wongi.Engine.DSL.Var
+
   defstruct [:fun, :var, opts: []]
 
-  def new(fun, var, opts) do
-    %__MODULE__{fun: fun, var: var, opts: opts}
-  end
+  def new(fun, %Var{name: name}, opts), do: %__MODULE__{fun: fun, var: name, opts: opts}
+  def new(fun, var, opts) when is_atom(var), do: %__MODULE__{fun: fun, var: var, opts: opts}
 
   defimpl Wongi.Engine.DSL.Clause do
     import Wongi.Engine.Compiler

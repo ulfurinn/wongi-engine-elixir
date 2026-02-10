@@ -1,8 +1,11 @@
 defmodule Wongi.Engine.DSL.Assign do
   @moduledoc false
+  alias Wongi.Engine.DSL.Var
+
   defstruct [:name, :value]
 
-  def new(name, value), do: %__MODULE__{name: name, value: value}
+  def new(%Var{name: name}, value), do: %__MODULE__{name: name, value: value}
+  def new(name, value) when is_atom(name), do: %__MODULE__{name: name, value: value}
 
   defimpl Wongi.Engine.DSL.Clause do
     import Wongi.Engine.Compiler
