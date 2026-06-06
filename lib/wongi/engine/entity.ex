@@ -7,8 +7,8 @@ defmodule Wongi.Engine.Entity do
 
   def new(rete, subject), do: %__MODULE__{rete: rete, subject: subject}
 
-  def on(entity, rete), do: %__MODULE__{entity | rete: rete}
-  def over(entity, subject), do: %__MODULE__{entity | subject: subject}
+  def on(%__MODULE__{} = entity, rete), do: %{entity | rete: rete}
+  def over(%__MODULE__{} = entity, subject), do: %{entity | subject: subject}
 
   def fetch(%__MODULE__{rete: nil}, _),
     do: raise("Entity not bound to an engine instance; use Entity.on/2")

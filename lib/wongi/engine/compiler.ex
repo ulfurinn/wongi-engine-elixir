@@ -50,12 +50,12 @@ defmodule Wongi.Engine.Compiler do
     |> put_node(node)
   end
 
-  def put_rete(context, rete) do
-    %__MODULE__{context | rete: rete}
+  def put_rete(%__MODULE__{} = context, rete) do
+    %{context | rete: rete}
   end
 
   defp put_node(%__MODULE__{} = context, node) do
-    %__MODULE__{context | node_ref: Beta.ref(node)}
+    %{context | node_ref: Beta.ref(node)}
   end
 
   defp production(context, ref, actions) do

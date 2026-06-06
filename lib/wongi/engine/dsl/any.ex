@@ -15,13 +15,13 @@ defmodule Wongi.Engine.DSL.Any do
     alias Wongi.Engine.Compiler
     alias Wongi.Engine.DSL.Clause
 
-    def compile(%@for{clauses: clauses}, context) do
+    def compile(%@for{clauses: clauses}, %Compiler{} = context) do
       initial = context
 
       {context, subcontexts} =
         Enum.reduce(clauses, {context, []}, fn subchain, {context, subcontexts} ->
           # reset visibility, but keep created structures in the rete
-          context = %Compiler{initial | rete: context.rete}
+          context = %{initial | rete: context.rete}
 
           context =
             Enum.reduce(subchain, context, fn clause, context ->

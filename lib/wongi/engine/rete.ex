@@ -530,8 +530,8 @@ defmodule Wongi.Engine.Rete do
     %__MODULE__{rete | tokens: tokens}
   end
 
-  defp put_neg_join_results(rete, jrs) do
-    %__MODULE__{rete | neg_join_results: jrs}
+  defp put_neg_join_results(%__MODULE__{} = rete, jrs) do
+    %{rete | neg_join_results: jrs}
   end
 
   defp generation_add(
