@@ -29,7 +29,7 @@ jobs:
         uses: erlef/setup-beam@v1
         id: beam
         with:
-          elixir-version: '1.18.1' # [Required] Define the Elixir version
+          elixir-version: 'v1.20.4' # [Required] Define the Elixir version
           otp-version: '27.2'      # [Required] Define the Erlang/OTP version
 
       - name: Restore dependencies cache
@@ -74,7 +74,7 @@ jobs:
         uses: erlef/setup-beam@v1
         id: beam
         with:
-          elixir-version: '1.18.1' # [Required] Define the Elixir version
+          elixir-version: 'v1.20.4' # [Required] Define the Elixir version
           otp-version: '27.2'      # [Required] Define the Erlang/OTP version
 
       - name: Restore dependencies cache
