@@ -74,11 +74,16 @@ defmodule Wongi.Engine.Beta.NCC do
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(%@for{partner_ref: partner} = node, token, rete) do
-      rete = Rete.add_token(rete, token)
+      signature = Token.signature(token)
 
       rete =
         rete
-        |> Rete.tokens(partner)
+        |> Rete.add_token(token)
+        |> Rete.index_join_token(node.ref, signature, token)
+
+      rete =
+        rete
+        |> Rete.join_tokens(partner, signature)
         |> Enum.reduce(rete, fn ncc_token, rete ->
           if Partner.owner_token?(token, ncc_token) do
             Rete.add_ncc_token(rete, token, ncc_token)
@@ -100,6 +105,7 @@ defmodule Wongi.Engine.Beta.NCC do
       rete =
         rete
         |> Rete.remove_token(token)
+        |> Rete.unindex_join_token(node.ref, Token.signature(token), token)
 
       rete
       |> Rete.beta_subscriptions(node)

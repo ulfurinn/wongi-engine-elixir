@@ -37,6 +37,9 @@ defmodule Wongi.Engine.Rete do
     :indexes,
     :manual,
     :tokens,
+    :join_tokens,
+    :tokens_by_parent,
+    :tokens_by_wme,
     :neg_join_results,
     :ncc_tokens,
     :ncc_owners,
@@ -62,6 +65,9 @@ defmodule Wongi.Engine.Rete do
         end,
       manual: MapSet.new(),
       tokens: %{},
+      join_tokens: %{},
+      tokens_by_parent: %{},
+      tokens_by_wme: %{},
       neg_join_results: JoinResults.new(),
       ncc_tokens: %{},
       ncc_owners: %{},
@@ -319,6 +325,7 @@ defmodule Wongi.Engine.Rete do
 
     rete
     |> put_tokens(token.node_ref, node_tokens)
+    |> index_token(token)
   end
 
   def remove_token(%__MODULE__{tokens: tokens} = rete, token) do
@@ -329,6 +336,7 @@ defmodule Wongi.Engine.Rete do
         {:ok, node_tokens} ->
           rete
           |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
+          |> unindex_token(token)
           |> remove_neg_join_result(token)
           |> remove_generator(token)
           |> remove_ncc(token)
@@ -343,6 +351,105 @@ defmodule Wongi.Engine.Rete do
 
       _ ->
         wmes |> Enum.reduce(rete, &retract(&2, &1, token))
+    end
+  end
+
+  # Secondary index of a join node's input tokens, keyed by the values of the
+  # variables the join tests against, so that an alpha activation does not
+  # have to scan every token. Maintained by the join node itself.
+  @doc false
+  def index_join_token(%__MODULE__{join_tokens: join_tokens} = rete, node_ref, key, token) do
+    node_index = Map.get(join_tokens, node_ref, %{})
+    bucket = node_index |> Map.get_lazy(key, &MapSet.new/0) |> MapSet.put(token)
+
+    %__MODULE__{
+      rete
+      | join_tokens: Map.put(join_tokens, node_ref, Map.put(node_index, key, bucket))
+    }
+  end
+
+  @doc false
+  def unindex_join_token(%__MODULE__{join_tokens: join_tokens} = rete, node_ref, key, token) do
+    with %{^node_ref => node_index} <- join_tokens,
+         %{^key => bucket} <- node_index do
+      bucket = MapSet.delete(bucket, token)
+
+      node_index =
+        if Enum.empty?(bucket),
+          do: Map.delete(node_index, key),
+          else: Map.put(node_index, key, bucket)
+
+      join_tokens =
+        if map_size(node_index) == 0,
+          do: Map.delete(join_tokens, node_ref),
+          else: Map.put(join_tokens, node_ref, node_index)
+
+      %__MODULE__{rete | join_tokens: join_tokens}
+    else
+      _ -> rete
+    end
+  end
+
+  @doc false
+  def join_tokens(%__MODULE__{join_tokens: join_tokens}, node_ref, key) do
+    case join_tokens do
+      %{^node_ref => %{^key => bucket}} -> bucket
+      _ -> MapSet.new()
+    end
+  end
+
+  @doc false
+  def child_tokens(%__MODULE__{tokens_by_parent: index}, node, %Token{ref: parent_ref}) do
+    Map.get(index, {Beta.ref(node), parent_ref}, [])
+  end
+
+  @doc false
+  def tokens_with_wme(%__MODULE__{tokens_by_wme: index}, node, %WME{} = wme) do
+    Map.get(index, {Beta.ref(node), wme}, [])
+  end
+
+  defp index_token(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
+    by_parent =
+      Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
+        multi_put(acc, {node_ref, parent.ref}, token)
+      end)
+
+    by_wme =
+      case token.wme do
+        nil -> rete.tokens_by_wme
+        wme -> multi_put(rete.tokens_by_wme, {node_ref, wme}, token)
+      end
+
+    %__MODULE__{rete | tokens_by_parent: by_parent, tokens_by_wme: by_wme}
+  end
+
+  defp unindex_token(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
+    by_parent =
+      Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
+        multi_delete(acc, {node_ref, parent.ref}, token)
+      end)
+
+    by_wme =
+      case token.wme do
+        nil -> rete.tokens_by_wme
+        wme -> multi_delete(rete.tokens_by_wme, {node_ref, wme}, token)
+      end
+
+    %__MODULE__{rete | tokens_by_parent: by_parent, tokens_by_wme: by_wme}
+  end
+
+  defp multi_put(index, key, token) do
+    Map.update(index, key, MapSet.new([token]), &MapSet.put(&1, token))
+  end
+
+  defp multi_delete(index, key, token) do
+    case index do
+      %{^key => set} ->
+        set = MapSet.delete(set, token)
+        if Enum.empty?(set), do: Map.delete(index, key), else: Map.put(index, key, set)
+
+      _ ->
+        index
     end
   end
 

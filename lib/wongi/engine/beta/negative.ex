@@ -1,6 +1,7 @@
 # credo:disable-for-this-file Credo.Check.Refactor.Nesting
 defmodule Wongi.Engine.Beta.Negative do
   @moduledoc false
+  alias Wongi.Engine.Beta.TokenIndex
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
 
@@ -110,7 +111,7 @@ defmodule Wongi.Engine.Beta.Negative do
     defp alpha_activate(neg, wme, rete, betas: betas) do
       tokens =
         rete
-        |> Rete.tokens(neg)
+        |> TokenIndex.candidates(neg, wme)
         |> Enum.reject(&Token.ancestral_wme?(&1, wme))
 
       Enum.reduce(tokens, rete, fn token, rete ->
@@ -129,8 +130,9 @@ defmodule Wongi.Engine.Beta.Negative do
     def alpha_deactivate(neg, wme, rete) do
       Rete.neg_join_results(rete, wme)
       |> Enum.reduce(rete, fn {token, wme}, rete ->
-        Rete.tokens(rete, neg)
-        |> Enum.filter(fn t -> t == token end)
+        rete
+        |> Rete.tokens(neg)
+        |> MapSet.intersection(MapSet.new([token]))
         |> Enum.reduce(rete, fn token, rete ->
           rete = Rete.remove_neg_join_result(rete, token, wme)
 
@@ -149,7 +151,11 @@ defmodule Wongi.Engine.Beta.Negative do
     def beta_activate(neg, token, rete) do
       # return early if already has a duplicate token?
       # is it possible or some artifact of the ruby impl?
-      rete = Rete.add_token(rete, token)
+      rete =
+        rete
+        |> Rete.add_token(token)
+        |> TokenIndex.put(neg, token)
+
       wmes = Rete.select(rete, @for.specialize(neg, token))
 
       rete =
@@ -176,6 +182,7 @@ defmodule Wongi.Engine.Beta.Negative do
       rete =
         rete
         |> Rete.remove_token(token)
+        |> TokenIndex.delete(neg, token)
 
       rete
       |> Rete.beta_subscriptions(neg)
