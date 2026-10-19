@@ -12,3 +12,4 @@
 elixir_buildpack.config
 erl_crash.dump
 wongi_engine-*.tar
+.mix_tasks
