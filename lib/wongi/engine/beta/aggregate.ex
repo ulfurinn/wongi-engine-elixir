@@ -69,7 +69,10 @@ defmodule Wongi.Engine.Beta.Aggregate do
 
     token_partition = if partition, do: partition.(token)
 
-    rete = Rete.add_token(rete, token)
+    rete =
+      rete
+      |> Rete.add_token(token)
+      |> index_partition(node, token_partition, token)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
   end
@@ -79,26 +82,37 @@ defmodule Wongi.Engine.Beta.Aggregate do
 
     token_partition = if partition, do: partition.(token)
 
-    rete = Rete.remove_token(rete, token)
+    rete =
+      rete
+      |> Rete.remove_token(token)
+      |> unindex_partition(node, token_partition, token)
+
     rete = Common.beta_deactivate(Rete.beta_subscriptions(rete, node), token, rete)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
   end
 
-  defp evaluate_changed_partition(node, token_partition, partition_f, betas, rete) do
+  # Tokens are also stored by partition value, so that a change only has to
+  # re-aggregate the partition it belongs to.
+  defp index_partition(rete, _node, nil, _token), do: rete
+
+  defp index_partition(rete, node, partition, token),
+    do: Rete.index_join_token(rete, node.ref, partition, token)
+
+  defp unindex_partition(rete, _node, nil, _token), do: rete
+
+  defp unindex_partition(rete, node, partition, token),
+    do: Rete.unindex_join_token(rete, node.ref, partition, token)
+
+  defp evaluate_changed_partition(node, token_partition, _partition_f, betas, rete) do
     group =
       if token_partition do
-        Enum.group_by(Rete.tokens(rete, node), partition_f)
-        |> Map.get(token_partition)
+        Rete.join_tokens(rete, node.ref, token_partition)
       else
         Rete.tokens(rete, node)
       end
 
-    if group do
-      evaluate_partition(node, betas, group, rete)
-    else
-      rete
-    end
+    evaluate_partition(node, betas, group, rete)
   end
 
   defp evaluate_partition(node, betas, tokens, rete) do
@@ -116,8 +130,9 @@ defmodule Wongi.Engine.Beta.Aggregate do
         new_token = Token.new(beta, tokens, nil, assignment)
 
         rete =
-          Rete.tokens(rete, beta)
-          |> Enum.filter(&Token.child_of_any?(&1, tokens))
+          tokens
+          |> Enum.flat_map(&Enum.to_list(Rete.child_tokens(rete, beta, &1)))
+          |> Enum.uniq()
           |> Enum.reduce(rete, &Beta.beta_deactivate(beta, &1, &2))
 
         Beta.beta_activate(beta, new_token, rete)
