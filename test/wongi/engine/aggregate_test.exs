@@ -198,4 +198,24 @@ defmodule Wongi.Engine.AggregateTest do
       assert Enum.sort(result.object) == [1, 2]
     end
   end
+
+  test "variables bound differently by the aggregated tokens resolve by content" do
+    {rete, ref} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(var(:fruit), :weight, var(:weight)),
+            aggregate(&Enum.sum/1, :total, over: :weight)
+          ]
+        )
+      )
+
+    rete = Enum.reduce(1..8, rete, fn i, rete -> assert(rete, :"fruit#{i}", :weight, i) end)
+
+    assert [token] = rete |> tokens(ref) |> Enum.to_list()
+    assert 36 = token[:total]
+    # the greatest of the tokens' assignments wins, whatever order they were created in
+    assert {:fruit8, 8} = {token[:fruit], token[:weight]}
+  end
 end

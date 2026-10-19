@@ -124,7 +124,7 @@ defmodule Wongi.Engine.Beta.Aggregate do
 
       mapped = Enum.map(tokens, mapper)
       aggregated = mapped |> aggregator.()
-      assignment = %{node.var => aggregated}
+      assignment = Map.put(inherited_assignments(tokens), node.var, aggregated)
 
       Enum.reduce(betas, rete, fn beta, rete ->
         new_token = Token.new(beta, tokens, nil, assignment)
@@ -138,6 +138,18 @@ defmodule Wongi.Engine.Beta.Aggregate do
         Beta.beta_activate(beta, new_token, rete)
       end)
     end
+  end
+
+  # The aggregated token has all tokens of the group as parents, which may bind
+  # the same variable to different values. Left to the parent set's iteration
+  # order, which variable value is visible downstream would depend on the
+  # identity of the tokens, so resolve it here in a way that depends only on
+  # their contents.
+  defp inherited_assignments(tokens) do
+    tokens
+    |> Enum.map(&Token.assignments/1)
+    |> Enum.sort()
+    |> Enum.reduce(%{}, &Map.merge(&2, &1))
   end
 
   def aggregator_fn(%__MODULE__{fun: fun}), do: fun
