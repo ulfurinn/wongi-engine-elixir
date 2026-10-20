@@ -201,6 +201,27 @@ defmodule Wongi.Engine.GenerateTest do
     assert [_token] = tokens(rete, ref) |> Enum.to_list()
   end
 
+  # The alpha activations of one WME run in the order of the alpha patterns, not
+  # of the rule's clauses. When the later clause's pattern comes first, its join
+  # sees the token that the earlier clause's join has not yet produced; when it
+  # comes second, it sees the token that already contains this very WME.
+  for {name, first, second} <- [
+        {"parent pattern first", has(var(:x), :b, var(:z)), has(:a, :b, var(:z))},
+        {"child pattern first", has(:a, :b, var(:z)), has(var(:x), :b, var(:z))}
+      ] do
+    test "a WME does not combine with itself (#{name})" do
+      {rete, ref} =
+        new()
+        |> compile_and_get_ref(
+          rule(forall: [unquote(Macro.escape(first)), unquote(Macro.escape(second))])
+        )
+
+      rete = rete |> assert(:a, :b, :c)
+
+      assert [_token] = tokens(rete, ref) |> Enum.to_list()
+    end
+  end
+
   test "supports functional generators" do
     rete =
       new()

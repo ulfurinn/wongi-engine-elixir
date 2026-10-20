@@ -37,7 +37,7 @@ defmodule Wongi.Engine.Rete do
     :indexes,
     :manual,
     :tokens,
-    :join_tokens,
+    :node_index,
     :tokens_by_parent,
     :tokens_by_wme,
     :neg_join_results,
@@ -65,7 +65,7 @@ defmodule Wongi.Engine.Rete do
         end,
       manual: MapSet.new(),
       tokens: %{},
-      join_tokens: %{},
+      node_index: %{},
       tokens_by_parent: %{},
       tokens_by_wme: %{},
       neg_join_results: JoinResults.new(),
@@ -325,7 +325,7 @@ defmodule Wongi.Engine.Rete do
 
     rete
     |> put_tokens(token.node_ref, node_tokens)
-    |> index_token(token)
+    |> index_relations(token)
   end
 
   def remove_token(%__MODULE__{tokens: tokens} = rete, token) do
@@ -336,7 +336,7 @@ defmodule Wongi.Engine.Rete do
         {:ok, node_tokens} ->
           rete
           |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
-          |> unindex_token(token)
+          |> unindex_relations(token)
           |> remove_neg_join_result(token)
           |> remove_generator(token)
           |> remove_ncc(token)
@@ -354,45 +354,59 @@ defmodule Wongi.Engine.Rete do
     end
   end
 
-  # Secondary index of a join node's input tokens, keyed by the values of the
-  # variables the join tests against, so that an alpha activation does not
-  # have to scan every token. Maintained by the join node itself.
+  # Per-node secondary index of the tokens a node holds, for nodes that need to
+  # find a subset of them without scanning all. What the key means is up to the
+  # node, and the node is responsible for calling put and delete next to
+  # add_token and remove_token with the same key. A nil key means "not indexed"
+  # and is ignored, so callers can pass the result of a key function that
+  # declines to index a token.
   @doc false
-  def index_join_token(%__MODULE__{join_tokens: join_tokens} = rete, node_ref, key, token) do
-    node_index = Map.get(join_tokens, node_ref, %{})
-    bucket = node_index |> Map.get_lazy(key, &MapSet.new/0) |> MapSet.put(token)
+  def put_node_index(rete, node, key, token)
+  def put_node_index(%__MODULE__{} = rete, _node, nil, _token), do: rete
+
+  def put_node_index(%__MODULE__{node_index: node_index} = rete, node, key, token) do
+    node_ref = Beta.ref(node)
+    buckets = Map.get(node_index, node_ref, %{})
+    bucket = buckets |> Map.get_lazy(key, &MapSet.new/0) |> MapSet.put(token)
 
     %__MODULE__{
       rete
-      | join_tokens: Map.put(join_tokens, node_ref, Map.put(node_index, key, bucket))
+      | node_index: Map.put(node_index, node_ref, Map.put(buckets, key, bucket))
     }
   end
 
   @doc false
-  def unindex_join_token(%__MODULE__{join_tokens: join_tokens} = rete, node_ref, key, token) do
-    with %{^node_ref => node_index} <- join_tokens,
-         %{^key => bucket} <- node_index do
+  def delete_node_index(rete, node, key, token)
+  def delete_node_index(%__MODULE__{} = rete, _node, nil, _token), do: rete
+
+  def delete_node_index(%__MODULE__{node_index: node_index} = rete, node, key, token) do
+    node_ref = Beta.ref(node)
+
+    with %{^node_ref => buckets} <- node_index,
+         %{^key => bucket} <- buckets do
       bucket = MapSet.delete(bucket, token)
 
-      node_index =
+      buckets =
         if Enum.empty?(bucket),
-          do: Map.delete(node_index, key),
-          else: Map.put(node_index, key, bucket)
+          do: Map.delete(buckets, key),
+          else: Map.put(buckets, key, bucket)
 
-      join_tokens =
-        if map_size(node_index) == 0,
-          do: Map.delete(join_tokens, node_ref),
-          else: Map.put(join_tokens, node_ref, node_index)
+      node_index =
+        if map_size(buckets) == 0,
+          do: Map.delete(node_index, node_ref),
+          else: Map.put(node_index, node_ref, buckets)
 
-      %__MODULE__{rete | join_tokens: join_tokens}
+      %__MODULE__{rete | node_index: node_index}
     else
       _ -> rete
     end
   end
 
   @doc false
-  def join_tokens(%__MODULE__{join_tokens: join_tokens}, node_ref, key) do
-    case join_tokens do
+  def get_node_index(%__MODULE__{node_index: node_index}, node, key) do
+    node_ref = Beta.ref(node)
+
+    case node_index do
       %{^node_ref => %{^key => bucket}} -> bucket
       _ -> MapSet.new()
     end
@@ -408,7 +422,7 @@ defmodule Wongi.Engine.Rete do
     Map.get(index, {Beta.ref(node), wme}, [])
   end
 
-  defp index_token(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
+  defp index_relations(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
     by_parent =
       Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
         multi_put(acc, {node_ref, parent.ref}, token)
@@ -423,7 +437,7 @@ defmodule Wongi.Engine.Rete do
     %__MODULE__{rete | tokens_by_parent: by_parent, tokens_by_wme: by_wme}
   end
 
-  defp unindex_token(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
+  defp unindex_relations(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
     by_parent =
       Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
         multi_delete(acc, {node_ref, parent.ref}, token)

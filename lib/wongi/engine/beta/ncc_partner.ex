@@ -9,22 +9,22 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
   def owner_for(%__MODULE__{ncc_ref: ncc}, ncc_token, rete) do
     ncc_token
     |> Token.lineage_signatures()
-    |> Enum.flat_map(&Enum.to_list(Rete.join_tokens(rete, ncc, &1)))
+    |> Enum.flat_map(&Enum.to_list(Rete.get_node_index(rete, ncc, &1)))
     |> Enum.find(&owner_token?(&1, ncc_token))
   end
 
   # Partner tokens are indexed under the signature of each token in their
   # lineage, so that an NCC node can find the partner tokens it owns.
-  def index(rete, %__MODULE__{ref: ref}, token) do
+  def index(rete, %__MODULE__{} = node, token) do
     token
     |> Token.lineage_signatures()
-    |> Enum.reduce(rete, &Rete.index_join_token(&2, ref, &1, token))
+    |> Enum.reduce(rete, &Rete.put_node_index(&2, node, &1, token))
   end
 
-  def unindex(rete, %__MODULE__{ref: ref}, token) do
+  def unindex(rete, %__MODULE__{} = node, token) do
     token
     |> Token.lineage_signatures()
-    |> Enum.reduce(rete, &Rete.unindex_join_token(&2, ref, &1, token))
+    |> Enum.reduce(rete, &Rete.delete_node_index(&2, node, &1, token))
   end
 
   def owner_token?(token, ncc_token) do

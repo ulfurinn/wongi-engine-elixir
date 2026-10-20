@@ -189,4 +189,23 @@ defmodule Wongi.Engine.NegTest do
     rete = rete |> assert(:c, :d, :d)
     assert [] = rete |> tokens(ref) |> Enum.to_list()
   end
+
+  test "a WME blocks a token that it is itself part of" do
+    {rete, ref} =
+      new()
+      |> compile_and_get_ref(
+        rule(
+          forall: [
+            has(var(:x), :b, var(:z)),
+            neg(:a, :b, var(:z))
+          ]
+        )
+      )
+
+    rete = rete |> assert(:a, :b, :c)
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
+
+    rete = rete |> retract(:a, :b, :c)
+    assert [] = rete |> tokens(ref) |> Enum.to_list()
+  end
 end

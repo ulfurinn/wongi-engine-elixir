@@ -79,11 +79,11 @@ defmodule Wongi.Engine.Beta.NCC do
       rete =
         rete
         |> Rete.add_token(token)
-        |> Rete.index_join_token(node.ref, signature, token)
+        |> Rete.put_node_index(node, signature, token)
 
       rete =
         rete
-        |> Rete.join_tokens(partner, signature)
+        |> Rete.get_node_index(partner, signature)
         |> Enum.reduce(rete, fn ncc_token, rete ->
           if Partner.owner_token?(token, ncc_token) do
             Rete.add_ncc_token(rete, token, ncc_token)
@@ -105,7 +105,7 @@ defmodule Wongi.Engine.Beta.NCC do
       rete =
         rete
         |> Rete.remove_token(token)
-        |> Rete.unindex_join_token(node.ref, Token.signature(token), token)
+        |> Rete.delete_node_index(node, Token.signature(token), token)
 
       rete
       |> Rete.beta_subscriptions(node)

@@ -72,7 +72,7 @@ defmodule Wongi.Engine.Beta.Aggregate do
     rete =
       rete
       |> Rete.add_token(token)
-      |> index_partition(node, token_partition, token)
+      |> Rete.put_node_index(node, token_partition, token)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
   end
@@ -85,29 +85,19 @@ defmodule Wongi.Engine.Beta.Aggregate do
     rete =
       rete
       |> Rete.remove_token(token)
-      |> unindex_partition(node, token_partition, token)
+      |> Rete.delete_node_index(node, token_partition, token)
 
     rete = Common.beta_deactivate(Rete.beta_subscriptions(rete, node), token, rete)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
   end
 
-  # Tokens are also stored by partition value, so that a change only has to
-  # re-aggregate the partition it belongs to.
-  defp index_partition(rete, _node, nil, _token), do: rete
-
-  defp index_partition(rete, node, partition, token),
-    do: Rete.index_join_token(rete, node.ref, partition, token)
-
-  defp unindex_partition(rete, _node, nil, _token), do: rete
-
-  defp unindex_partition(rete, node, partition, token),
-    do: Rete.unindex_join_token(rete, node.ref, partition, token)
-
+  # Tokens are also stored by partition value (nil, when not partitioned, is not
+  # indexed), so a change only has to re-aggregate the partition it belongs to.
   defp evaluate_changed_partition(node, token_partition, _partition_f, betas, rete) do
     group =
       if token_partition do
-        Rete.join_tokens(rete, node.ref, token_partition)
+        Rete.get_node_index(rete, node, token_partition)
       else
         Rete.tokens(rete, node)
       end

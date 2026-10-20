@@ -1,7 +1,7 @@
 # credo:disable-for-this-file Credo.Check.Refactor.Nesting
 defmodule Wongi.Engine.Beta.Negative do
   @moduledoc false
-  alias Wongi.Engine.Beta.TokenIndex
+  alias Wongi.Engine.Beta.JoinKey
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
 
@@ -109,10 +109,10 @@ defmodule Wongi.Engine.Beta.Negative do
       do: alpha_activate(neg, wme, rete, betas: Rete.beta_subscriptions(rete, neg))
 
     defp alpha_activate(neg, wme, rete, betas: betas) do
-      tokens =
-        rete
-        |> TokenIndex.candidates(neg, wme)
-        |> Enum.reject(&Token.ancestral_wme?(&1, wme))
+      # No need to skip tokens that already contain this WME, as Join must: such
+      # a token has been matched against the WME by beta_activate, and recording
+      # the same join result again is idempotent.
+      tokens = JoinKey.candidates(rete, neg, wme)
 
       Enum.reduce(tokens, rete, fn token, rete ->
         if @for.match(neg, token, wme) do
@@ -154,7 +154,7 @@ defmodule Wongi.Engine.Beta.Negative do
       rete =
         rete
         |> Rete.add_token(token)
-        |> TokenIndex.put(neg, token)
+        |> Rete.put_node_index(neg, JoinKey.token_key(neg, token), token)
 
       wmes = Rete.select(rete, @for.specialize(neg, token))
 
@@ -182,7 +182,7 @@ defmodule Wongi.Engine.Beta.Negative do
       rete =
         rete
         |> Rete.remove_token(token)
-        |> TokenIndex.delete(neg, token)
+        |> Rete.delete_node_index(neg, JoinKey.token_key(neg, token), token)
 
       rete
       |> Rete.beta_subscriptions(neg)

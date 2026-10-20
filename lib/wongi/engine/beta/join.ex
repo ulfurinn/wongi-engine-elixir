@@ -2,7 +2,7 @@
 defmodule Wongi.Engine.Beta.Join do
   @moduledoc false
   alias Wongi.Engine.Beta
-  alias Wongi.Engine.Beta.TokenIndex
+  alias Wongi.Engine.Beta.JoinKey
   alias Wongi.Engine.Filter
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
@@ -111,7 +111,7 @@ defmodule Wongi.Engine.Beta.Join do
       betas = Rete.beta_subscriptions(rete, join)
 
       tokens =
-        TokenIndex.candidates(rete, join, wme)
+        JoinKey.candidates(rete, join, wme)
         |> Enum.reject(&Token.ancestral_wme?(&1, wme))
 
       Enum.reduce(tokens, rete, &propagate_matching(join, &1, wme, betas, &2))
@@ -129,7 +129,7 @@ defmodule Wongi.Engine.Beta.Join do
       rete =
         rete
         |> Rete.add_token(token)
-        |> TokenIndex.put(join, token)
+        |> Rete.put_node_index(join, JoinKey.token_key(join, token), token)
 
       betas = Rete.beta_subscriptions(rete, join)
       wmes = Rete.select(rete, @for.specialize(join, token))
@@ -141,7 +141,7 @@ defmodule Wongi.Engine.Beta.Join do
       rete =
         rete
         |> Rete.remove_token(token)
-        |> TokenIndex.delete(join, token)
+        |> Rete.delete_node_index(join, JoinKey.token_key(join, token), token)
 
       rete
       |> Rete.beta_subscriptions(join)

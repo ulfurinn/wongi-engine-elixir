@@ -32,41 +32,45 @@ Read with `Rete.child_tokens(rete, node, parent_token)` and `Rete.tokens_with_wm
 
 Keying on `parent.ref` rather than the parent struct avoids hashing a deeply nested term on every operation. This is safe because tokens are never modified after creation, so equal ref implies equal token.
 
-### 2. Node-specific, `join_tokens`, maintained by the node
+### 2. Node-specific, `node_index`, maintained by the node
 
-`join_tokens: %{node_ref => %{key => MapSet.t(Token)}}`, with the API
+`node_index: %{node_ref => %{key => MapSet.t(Token)}}`, with the API
 
 ```elixir
-Rete.index_join_token(rete, node_ref, key, token)
-Rete.unindex_join_token(rete, node_ref, key, token)
-Rete.join_tokens(rete, node_ref, key)        # empty MapSet if none
+Rete.put_node_index(rete, node, key, token)
+Rete.delete_node_index(rete, node, key, token)
+Rete.get_node_index(rete, node, key)        # empty MapSet if none
 ```
 
-This is deliberately a dumb two-level multimap; what the *key* means is up to the node. Because the node supplies it, the node must also call put and delete itself (see "Invariants"). Empty buckets and empty node maps are removed on delete.
+This is the one function set every node uses. It is deliberately a dumb two-level multimap; what the *key* means is up to the node. A `nil` key means "not indexed" and makes put and delete no-ops, so a key function can decline to index a token. Because the node supplies the key, the node must also call put and delete itself (see "Invariants").
 
-| Node | `node_ref` | key | looked up by |
-|---|---|---|---|
-| Join, Negative | the node | values of the variables the node tests, in `subject, predicate, object` order | `alpha_activate` |
-| NCC | the NCC node | `Token.signature(token)` | partner's `beta_activate` |
-| NCC partner | the partner node | signature of **every token in the token's lineage** | `NCC.beta_activate` (via `owner_for`) |
-| Aggregate | the node | partition value (only when partitioned and non-nil) | `evaluate_changed_partition` |
+| Node | key | looked up by |
+|---|---|---|
+| Join, Negative | values of the variables the node tests against tokens, in `subject, predicate, object` order (`JoinKey`) | `alpha_activate` |
+| NCC | `Token.signature(token)` | partner's `beta_activate` |
+| NCC partner | signature of **every token in the token's lineage** | `NCC.beta_activate` (via `owner_for`) |
+| Aggregate | partition value (only when partitioned and non-nil) | `evaluate_changed_partition` |
 
 ## Join and Negative keys
 
-Implemented in [token_index.ex](../lib/wongi/engine/beta/token_index.ex).
+Implemented in [join_key.ex](../lib/wongi/engine/beta/join_key.ex).
 
 A join clause like `has(var(:p), :parent, var(:c))` has a `tests` map, here `%{subject: :p}`, saying which WME fields must equal which token variables. So:
 
-- **Token key** (on `beta_activate`): `token_key(tests, token)` is the list of `Token.fetch(token, var)` for each tested field, in fixed field order.
-- **WME key** (on `alpha_activate`): `wme_key(tests, wme)` is the list of `wme[field]` for the same fields.
+- **Token key** (on `beta_activate`): `token_key(node, token)` is the list of `Token.fetch(token, var)` for each indexed field, in fixed field order.
+- **WME key** (on `alpha_activate`): `wme_key(node, wme)` is the list of `wme[field]` for the same fields.
 - A WME can only match tokens stored under exactly its key, so `candidates/3` fetches that one bucket. Matching is by exact term equality, the same as the `{:ok, ^value}` pin in `match/3`.
 
-Two details:
+Which fields are indexed (`index_fields/1`): the tested fields, **except** those whose variable is introduced by the same clause (it is in the node's `assignments`). Such a variable is supplied by the WME during `match/3` and is never in the input token. This happens for a variable repeated within its first clause: `has(x, :friend, x)`, or `neg(x, y, y)` where `y` is new. There the second occurrence is a test, but the token can't hold the value.
 
-- **`:unindexed` bucket.** If the token doesn't bind a tested variable, for example one that this same clause introduces (`has(x, :friend, x)`), no key can be computed. Such tokens go in the `:unindexed` bucket, and `candidates/3` always appends it. This keeps matching correct at the price of scanning those tokens.
-- **Ancestor filter still runs.** `candidates` only narrows the set. `Enum.reject(&Token.ancestral_wme?/2)` and `match/3` still run on the survivors, so the index only has to be a superset of the real matches, never exact.
+When no fields are left to index, the key is `nil`: nothing is indexed, and `candidates/3` falls back to all of the node's tokens (`Rete.tokens`). That is the common case for the first clause after the root, and in effect it is the old behaviour, minus a redundant copy of every token.
 
-With no tests (a clause that's all constants) the key is `[]`: one bucket holding every token, so it degrades to the old behaviour.
+A token that doesn't bind a variable that the node does test gets a `nil` key too. It can never match: `match/3` would fail on `Token.fetch`. So it needn't be a candidate, though it is still in `Rete.tokens`.
+
+Two properties to keep in mind:
+
+- **`candidates` only narrows.** `match/3` still runs on the survivors, so the index has to be a superset of the true matches, never exact.
+- **Join still skips tokens that already contain the WME** (`Token.ancestral_wme?`). That's needed, not redundant: alpha activations of a WME run in the order of the alpha patterns (`@alpha_patterns` in `Rete`), not the order of clauses. When the parent clause's pattern runs first, the child sees a token that already contains this very WME and would combine it with itself. The regression tests are in `generate_test.exs`. `Negative` doesn't need the check because recording a join result twice is idempotent, so it was removed there.
 
 ## NCC signatures
 
@@ -85,9 +89,9 @@ The aggregated child token also now carries its group's merged assignments in it
 
 ## Invariants (where it can break)
 
-1. **Index and `tokens` are updated together.** The generic indexes are handled inside `add_token` / `remove_token`. The `join_tokens` ones are not: each node that uses them calls put in its `beta_activate` and delete in its `beta_deactivate`, next to `add_token`/`remove_token`. Any new code path that adds or removes tokens of such a node without doing so leaves a stale index. Nodes: Join, Negative, NCC, NCC partner, Aggregate.
+1. **Index and `tokens` are updated together.** The generic indexes are handled inside `add_token` / `remove_token`. The `node_index` ones are not: each node that uses them calls put in its `beta_activate` and delete in its `beta_deactivate`, next to `add_token`/`remove_token`. Any new code path that adds or removes tokens of such a node without doing so leaves a stale index. Nodes: Join, Negative, NCC, NCC partner, Aggregate.
 2. **Key must be computed identically on put and delete.** It is derived from the token (and node), which is immutable, so it is stable. If tokens ever became mutable, this breaks.
-3. **Indexes must be supersets of the matches.** The consumers re-check, so extra candidates are harmless; missing ones are not. That is why `:unindexed` is always included.
+3. **Indexes must be supersets of the matches.** The consumers re-check, so extra candidates are harmless; missing ones are not. A token may only be left out of `node_index` (nil key) if it can't match anything.
 4. **No registration step.** The node computes keys itself from its own `tests`, so it doesn't matter that the parent seeds a new node before it is added to `beta_table` (the order in `Compiler.advance`).
 5. **Iteration order is not guaranteed** between the old and new code, since lookups return per-bucket MapSets. Anything order-sensitive downstream is affected; I only found the aggregate assignment merge, which is now sorted.
 
@@ -101,9 +105,9 @@ The aggregated child token also now carries its group's merged assignments in it
 
 - `Or`, `Filter`, `Assign`: `seed` iterates every token, which is required when a rule is compiled.
 - Unpartitioned `Aggregate`: re-runs the aggregate function over all tokens on every change, inherent to the aggregation.
-- Join/Negative tokens that land in `:unindexed`.
 
 ## Ideas not done
 
 - Make un-bound conflicting variables after an aggregate really unbound rather than "greatest wins".
-- Merge the `join_tokens` put/delete calls into the generic `add_token`/`remove_token` by giving nodes a protocol callback that returns their key, which would remove invariant 1 at the cost of a bigger change.
+- Merge the `node_index` put/delete calls into the generic `add_token`/`remove_token` by giving nodes a protocol callback that returns their key, which would remove invariant 1 at the cost of a bigger change.
+- Key the remaining MapSets that hold whole tokens (`tokens`, the buckets above, `generation_by_*`, `neg_join_results`, `ncc_tokens`) by `token.ref`. Hashing a whole token is only about 1-2 µs more than hashing a ref for ordinary tokens, but it grows with the size of the token: an aggregated token with 1000 parents costs about 500 µs per set operation, against well under 1 µs by ref.
