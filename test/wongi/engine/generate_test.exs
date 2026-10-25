@@ -229,4 +229,71 @@ defmodule Wongi.Engine.GenerateTest do
     assert [] = rete |> select(:x, :y, 1) |> Enum.to_list()
     assert [] = rete |> select(:x, :y, 2) |> Enum.to_list()
   end
+
+  describe "facts with more than one source" do
+    setup do
+      {rete, ref} =
+        new()
+        |> compile(rule(forall: [has(var(:x), :a, true)], do: [gen(var(:x), :q, true)]))
+        |> compile(rule(forall: [has(var(:x), :b, true)], do: [gen(var(:x), :q, true)]))
+        |> compile_and_get_ref(rule(forall: [has(var(:x), :q, true)]))
+
+      %{rete: rete, ref: ref}
+    end
+
+    test "keep their matches when one generator goes", %{rete: rete, ref: ref} do
+      rete = rete |> assert(:x, :a, true) |> assert(:x, :b, true) |> retract(:x, :a, true)
+
+      assert [_] = rete |> select(:x, :q, true) |> Enum.to_list()
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "keep their matches when the generator goes but the fact is also asserted", %{
+      rete: rete,
+      ref: ref
+    } do
+      rete = rete |> assert(:x, :a, true) |> assert(:x, :q, true) |> retract(:x, :a, true)
+
+      assert [_] = rete |> select(:x, :q, true) |> Enum.to_list()
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "keep their matches when the assertion goes but the fact is still generated", %{
+      rete: rete,
+      ref: ref
+    } do
+      rete = rete |> assert(:x, :a, true) |> assert(:x, :q, true) |> retract(:x, :q, true)
+
+      assert [_] = rete |> select(:x, :q, true) |> Enum.to_list()
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+    end
+  end
+
+  # These rules compute the transitive closure of :part_of.
+  defp direct_membership,
+    do: rule(forall: [has(var(:x), :member_of, var(:g))], do: [gen(var(:x), :in, var(:g))])
+
+  defp nested_membership,
+    do:
+      rule(
+        forall: [has(var(:x), :in, var(:g)), has(var(:g), :part_of, var(:h))],
+        do: [gen(var(:x), :in, var(:h))]
+      )
+
+  test "a fact derived again while it is being retracted is matched once" do
+    nested = nested_membership()
+
+    rete =
+      new()
+      |> compile(direct_membership())
+      |> compile(nested)
+      |> assert(:dave, :member_of, :backend)
+      |> assert(:everyone, :part_of, :everyone)
+      |> assert(:everyone, :part_of, :backend)
+      |> assert(:backend, :part_of, :everyone)
+      |> retract(:everyone, :part_of, :everyone)
+
+    # dave is in :backend, so in :everyone, so in :backend again
+    assert [_, _] = rete |> tokens(nested.ref) |> Enum.to_list()
+  end
 end
