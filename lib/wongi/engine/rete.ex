@@ -6,6 +6,7 @@ defmodule Wongi.Engine.Rete do
   alias Wongi.Engine.Beta
   alias Wongi.Engine.Beta.Root
   alias Wongi.Engine.Compiler
+  alias Wongi.Engine.Compiler.Reorder
   alias Wongi.Engine.JoinResults
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
@@ -86,6 +87,13 @@ defmodule Wongi.Engine.Rete do
   def compile(rete, rule) do
     Compiler.compile(rete, rule)
     |> add_production(rule.ref)
+  end
+
+  @spec compile_all(t(), Enumerable.t(Wongi.Engine.DSL.Rule.t()), keyword()) :: t()
+  def compile_all(rete, rules, opts \\ []) do
+    rules = Enum.to_list(rules)
+    rules = if Keyword.get(opts, :reorder, false), do: Reorder.reorder(rules), else: rules
+    Enum.reduce(rules, rete, &compile(&2, &1))
   end
 
   @spec compile_and_get_ref(t(), Wongi.Engine.DSL.Rule.t()) :: {t(), reference()}

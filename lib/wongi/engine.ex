@@ -215,6 +215,25 @@ defmodule Wongi.Engine do
   defdelegate compile(rete, rule), to: Rete
 
   @doc """
+  Returns an engine with all of the given rules installed.
+
+  With `reorder: true`, the positive matches and filters of the rules are
+  first reordered, so that the rules share as many nodes as possible. A node
+  is shared by rules that have the same chain of clauses leading to it, with
+  the same variable names, so this pays off in large rule sets that match the
+  same facts in different orders. It can also put a less selective match
+  first, so it is not done by default. Reordering does not change what the
+  rules match, and a rule that has nothing in common with the others is left
+  as it is.
+
+  Negations, NCCs, alternatives, assignments, aggregates and filters whose
+  variables are unknown (`filter/1`) are never moved, and nothing is moved
+  across them.
+  """
+  @spec compile_all(t(), Enumerable.t(rule()), keyword()) :: t()
+  defdelegate compile_all(rete, rules, opts \\ []), to: Rete
+
+  @doc """
   Returns an engine with the given rule installed and the rule reference.
 
   The rule reference can be used to retrieve production tokens using `tokens/2`.
