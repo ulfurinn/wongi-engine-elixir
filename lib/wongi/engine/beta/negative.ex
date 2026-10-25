@@ -129,8 +129,9 @@ defmodule Wongi.Engine.Beta.Negative do
     def alpha_deactivate(neg, wme, rete) do
       Rete.neg_join_results(rete, wme)
       |> Enum.reduce(rete, fn {token, wme}, rete ->
-        Rete.tokens(rete, neg)
-        |> Enum.filter(fn t -> t == token end)
+        rete
+        |> Rete.tokens(neg)
+        |> MapSet.intersection(MapSet.new([token]))
         |> Enum.reduce(rete, fn token, rete ->
           rete = Rete.remove_neg_join_result(rete, token, wme)
 
