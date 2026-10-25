@@ -296,4 +296,39 @@ defmodule Wongi.Engine.GenerateTest do
     # dave is in :backend, so in :everyone, so in :backend again
     assert [_, _] = rete |> tokens(nested.ref) |> Enum.to_list()
   end
+
+  # The fact generates :located_in, which joins with the fact itself.
+  test "the order of rules does not change their matches" do
+    direct =
+      rule(forall: [has(var(:d), :in_folder, var(:f))], do: [gen(var(:d), :located_in, var(:f))])
+
+    nested = rule(forall: [has(var(:d), :located_in, var(:f)), has(var(:f), :in_folder, var(:o))])
+
+    for rules <- [[direct, nested], [nested, direct]] do
+      rete = Enum.reduce(rules, new(), &compile(&2, &1)) |> assert(:ops, :in_folder, :ops)
+
+      assert [_] = rete |> tokens(nested.ref) |> Enum.to_list()
+    end
+  end
+
+  # The alpha activations of one WME run in the order of the alpha patterns, not
+  # of the rule's clauses. When the later clause's pattern comes first, its join
+  # sees the token that the earlier clause's join has not yet produced; when it
+  # comes second, the earlier join's token reaches it before the WME does.
+  for {name, first, second} <- [
+        {"parent pattern first", has(var(:x), :b, var(:z)), has(:a, :b, var(:z))},
+        {"child pattern first", has(:a, :b, var(:z)), has(var(:x), :b, var(:z))}
+      ] do
+    test "a WME combines with itself exactly once (#{name})" do
+      {rete, ref} =
+        new()
+        |> compile_and_get_ref(
+          rule(forall: [unquote(Macro.escape(first)), unquote(Macro.escape(second))])
+        )
+
+      rete = rete |> assert(:a, :b, :c)
+
+      assert [_token] = tokens(rete, ref) |> Enum.to_list()
+    end
+  end
 end

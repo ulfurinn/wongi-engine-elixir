@@ -41,6 +41,7 @@ defmodule Wongi.Engine.Rete do
     :ncc_tokens,
     :ncc_owners,
     :retracting,
+    :pending_alpha,
     # ---
     :generation_by_wme,
     :generation_by_token,
@@ -67,6 +68,7 @@ defmodule Wongi.Engine.Rete do
       ncc_tokens: %{},
       ncc_owners: %{},
       retracting: MapSet.new(),
+      pending_alpha: %{},
       # ---
       generation_by_wme: %{},
       generation_by_token: %{},
@@ -287,12 +289,41 @@ defmodule Wongi.Engine.Rete do
   defp activate(rete, wme, existing)
   defp activate(rete, _, true), do: rete
 
-  defp activate(rete, wme, false) do
+  # A node may receive the WME through a beta activation before its own alpha
+  # activation comes, when another node it was delivered to earlier generates
+  # facts that reach it. The nodes the WME has yet to be delivered to are
+  # recorded as pending, so that they can leave it to the alpha activation
+  # instead of matching it twice.
+  defp activate(%__MODULE__{pending_alpha: pending} = rete, wme, false) do
     subscriptions =
       rete
       |> alpha_subscriptions(wme)
 
-    subscriptions |> Enum.reduce(rete, &Beta.alpha_activate(&1, wme, &2))
+    {rete, []} =
+      Enum.reduce(subscriptions, {rete, subscriptions}, fn node, {rete, [node | rest]} ->
+        rete = put_pending_alpha(rete, wme, rest)
+        {Beta.alpha_activate(node, wme, rete), rest}
+      end)
+
+    # restore whatever an enclosing activation of the same WME had pending
+    case pending do
+      %{^wme => nodes} -> put_pending_alpha(rete, wme, nodes)
+      _ -> put_pending_alpha(rete, wme, [])
+    end
+  end
+
+  defp put_pending_alpha(%__MODULE__{pending_alpha: pending} = rete, wme, []),
+    do: %__MODULE__{rete | pending_alpha: Map.delete(pending, wme)}
+
+  defp put_pending_alpha(%__MODULE__{pending_alpha: pending} = rete, wme, nodes),
+    do: %__MODULE__{rete | pending_alpha: Map.put(pending, wme, nodes)}
+
+  @doc false
+  def alpha_pending?(%__MODULE__{pending_alpha: pending}, node, wme) do
+    case pending do
+      %{^wme => nodes} -> Beta.ref(node) in nodes
+      _ -> false
+    end
   end
 
   defp deactivate(rete, wme) do

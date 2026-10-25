@@ -109,10 +109,7 @@ defmodule Wongi.Engine.Beta.Join do
     def alpha_activate(join, wme, rete) do
       betas = Rete.beta_subscriptions(rete, join)
 
-      tokens =
-        rete
-        |> Rete.tokens(join)
-        |> Enum.reject(&Token.ancestral_wme?(&1, wme))
+      tokens = Rete.tokens(rete, join)
 
       Enum.reduce(tokens, rete, &propagate_matching(join, &1, wme, betas, &2))
     end
@@ -128,7 +125,11 @@ defmodule Wongi.Engine.Beta.Join do
       # is it possible or some artifact of the ruby impl?
       rete = Rete.add_token(rete, token)
       betas = Rete.beta_subscriptions(rete, join)
-      wmes = Rete.select(rete, @for.specialize(join, token))
+
+      wmes =
+        rete
+        |> Rete.select(@for.specialize(join, token))
+        |> Enum.reject(&Rete.alpha_pending?(rete, join, &1))
 
       Enum.reduce(wmes, rete, &propagate_matching(join, token, &1, betas, &2))
     end
