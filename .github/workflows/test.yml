@@ -63,6 +63,55 @@ jobs:
       - name: Lint
         run: mix lint.ci
 
+  bench:
+
+    name: Benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: 'v1.20.4' # [Required] Define the Elixir version
+          otp-version: '29.1'      # [Required] Define the Erlang/OTP version
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v6
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Build
+        run: mix do deps.get + compile
+        env:
+          MIX_ENV: prod
+
+      - name: Run benchmark
+        run: mix run bench/workload.exs 2000 --runs 5 --json bench.json | tee bench.txt
+        env:
+          MIX_ENV: prod
+
+      - name: Summarise
+        run: |
+          {
+            echo '### Benchmark (n = 2000, median of 5 runs)'
+            echo '```'
+            cat bench.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ github.sha }}
+          path: |
+            bench.json
+            bench.txt
+          retention-days: 90
+
   publish:
     
     if: github.ref_type == 'tag'
