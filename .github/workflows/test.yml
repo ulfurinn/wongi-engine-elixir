@@ -52,6 +52,9 @@ jobs:
 
       - name: Run tests
         run: mix test
+        env:
+          # runs of each consistency property in test/wongi/scenarios
+          PROPERTY_RUNS: 1000
 
       - name: Create PLTs
         if: steps.plt_cache.outputs.cache-hit != 'true'

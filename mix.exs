@@ -36,6 +36,7 @@ defmodule Wongi.Engine.MixProject do
   defp deps do
     [
       {:comparable, "~> 1.0.0"},
+      {:stream_data, "~> 1.1", only: :test},
       # dev tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
