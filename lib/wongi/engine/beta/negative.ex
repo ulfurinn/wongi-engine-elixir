@@ -111,10 +111,10 @@ defmodule Wongi.Engine.Beta.Negative do
       do: alpha_activate(neg, wme, rete, betas: Rete.beta_subscriptions(rete, neg))
 
     defp alpha_activate(neg, wme, rete, betas: betas) do
-      tokens =
-        rete
-        |> JoinKey.candidates(neg, wme)
-        |> Enum.reject(&Token.ancestral_wme?(&1, wme))
+      # No need to skip tokens that already contain this WME, as Join must: such
+      # a token has been matched against the WME by beta_activate, and recording
+      # the same join result again is idempotent.
+      tokens = JoinKey.candidates(rete, neg, wme)
 
       Enum.reduce(tokens, rete, fn token, rete ->
         if @for.match(neg, token, wme) do
