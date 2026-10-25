@@ -137,7 +137,8 @@ defmodule Wongi.Engine.DSL do
   @doc """
   A filter that passes if the value is a unary function that returns true.
 
-  The function will receive the variable value as its argument.
+  The function will receive the variable value as its argument. The variable
+  can be given as `var(:name)` or as `:name`.
   """
   def filter(var, func), do: Filter.new(Function.new(var, func))
 
