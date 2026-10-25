@@ -2,6 +2,7 @@
 defmodule Wongi.Engine.Beta.Join do
   @moduledoc false
   alias Wongi.Engine.Beta
+  alias Wongi.Engine.Beta.JoinKey
   alias Wongi.Engine.Filter
   alias Wongi.Engine.Token
   alias Wongi.Engine.WME
@@ -106,10 +107,12 @@ defmodule Wongi.Engine.Beta.Join do
 
     def equivalent?(_, _, _), do: false
 
+    defdelegate index_keys(join, token), to: JoinKey
+
     def alpha_activate(join, wme, rete) do
       betas = Rete.beta_subscriptions(rete, join)
 
-      tokens = Rete.tokens(rete, join)
+      tokens = JoinKey.candidates(rete, join, wme)
 
       Enum.reduce(tokens, rete, &propagate_matching(join, &1, wme, betas, &2))
     end
@@ -123,7 +126,10 @@ defmodule Wongi.Engine.Beta.Join do
     def beta_activate(%@for{} = join, token, rete) do
       # return early if already has a duplicate token?
       # is it possible or some artifact of the ruby impl?
-      rete = Rete.add_token(rete, token)
+      rete =
+        rete
+        |> Rete.add_token(join, token)
+
       betas = Rete.beta_subscriptions(rete, join)
 
       wmes =
@@ -137,7 +143,7 @@ defmodule Wongi.Engine.Beta.Join do
     def beta_deactivate(join, token, rete) do
       rete =
         rete
-        |> Rete.remove_token(token)
+        |> Rete.remove_token(join, token)
 
       rete
       |> Rete.beta_subscriptions(join)

@@ -29,6 +29,8 @@ defmodule Wongi.Engine.Beta.Production do
 
     def equivalent?(_, _, _), do: false
 
+    def index_keys(_, _), do: []
+
     @spec alpha_activate(
             Wongi.Engine.Beta.Production.t(),
             Wongi.Engine.WME.t(),
@@ -43,16 +45,16 @@ defmodule Wongi.Engine.Beta.Production do
           ) :: no_return()
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
-    def beta_activate(%@for{actions: actions}, token, rete) do
-      rete = Rete.add_token(rete, token)
+    def beta_activate(%@for{actions: actions} = node, token, rete) do
+      rete = Rete.add_token(rete, node, token)
 
       Enum.reduce(actions, rete, fn action, rete ->
         Action.execute(action, token, rete)
       end)
     end
 
-    def beta_deactivate(%@for{actions: actions}, token, rete) do
-      rete = Rete.remove_token(rete, token)
+    def beta_deactivate(%@for{actions: actions} = node, token, rete) do
+      rete = Rete.remove_token(rete, node, token)
 
       Enum.reduce(actions, rete, fn action, rete ->
         Action.deexecute(action, token, rete)

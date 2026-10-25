@@ -95,6 +95,17 @@ defmodule Wongi.Engine.Token do
     duplicate?(token, other) || Enum.any?(parents, &lineage_of?(&1, other))
   end
 
+  @doc false
+  # Two tokens are duplicates when they have equal signatures.
+  def signature(%__MODULE__{} = token) do
+    {token.wme, token.assignments, parent_refs(token)}
+  end
+
+  @doc false
+  def lineage_signatures(%__MODULE__{parents: parents} = token) do
+    [signature(token) | Enum.flat_map(parents, &lineage_signatures/1)]
+  end
+
   defp duplicate?(token, other) do
     token.wme == other.wme && token.assignments == other.assignments &&
       parent_refs(token) == parent_refs(other)

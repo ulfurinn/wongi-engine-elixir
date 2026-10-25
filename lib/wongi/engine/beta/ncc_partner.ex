@@ -7,8 +7,9 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
   defstruct [:ref, :parent_ref, :ncc_ref]
 
   def owner_for(%__MODULE__{ncc_ref: ncc}, ncc_token, rete) do
-    rete
-    |> Rete.tokens(ncc)
+    ncc_token
+    |> Token.lineage_signatures()
+    |> Enum.flat_map(&Enum.to_list(Rete.get_node_index(rete, ncc, &1)))
     |> Enum.find(&owner_token?(&1, ncc_token))
   end
 
@@ -33,6 +34,10 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
     # equivalence is a bit to think about weird for NCC
     def equivalent?(_, _, _), do: false
 
+    # Indexed under the signature of each token in the lineage, so that an NCC
+    # node can find the partner tokens it owns.
+    def index_keys(_, token), do: Token.lineage_signatures(token)
+
     @spec alpha_activate(
             Wongi.Engine.Beta.NCC.Partner.t(),
             Wongi.Engine.WME.t(),
@@ -48,7 +53,7 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(%@for{ncc_ref: ncc} = node, ncc_token, rete) do
-      rete = Rete.add_token(rete, ncc_token)
+      rete = Rete.add_token(rete, node, ncc_token)
 
       owner = @for.owner_for(node, ncc_token, rete)
 
@@ -63,10 +68,11 @@ defmodule Wongi.Engine.Beta.NCC.Partner do
       end
     end
 
-    def beta_deactivate(%@for{ncc_ref: ncc}, token, rete) do
+    def beta_deactivate(%@for{ncc_ref: ncc} = node, token, rete) do
       # capture owner before removing token, or else we'll lose that information
       owner = Rete.ncc_owner(rete, token)
-      rete = Rete.remove_token(rete, token)
+
+      rete = Rete.remove_token(rete, node, token)
 
       if owner && !Rete.has_ncc_tokens?(rete, owner) do
         rete

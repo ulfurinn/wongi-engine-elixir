@@ -6,6 +6,11 @@ defprotocol Wongi.Engine.Beta do
 
   def equivalent?(beta, other, rete)
 
+  # Keys under which Rete.add_token and Rete.remove_token store the token in the
+  # node's own index (Rete.get_node_index). They are derived from the token and
+  # the node alone, so that they come out the same on add and remove.
+  def index_keys(beta, token)
+
   def alpha_activate(listener, wme, rete)
   def alpha_deactivate(listener, wme, rete)
 
@@ -25,6 +30,8 @@ defimpl Wongi.Engine.Beta, for: Reference do
     |> Rete.get_beta(ref)
     |> Beta.equivalent?(other, rete)
   end
+
+  def index_keys(ref, _token), do: raise("cannot index tokens of bare ref #{inspect(ref)}")
 
   def seed(ref, listener, rete) do
     rete

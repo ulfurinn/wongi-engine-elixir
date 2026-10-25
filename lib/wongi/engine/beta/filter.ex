@@ -31,6 +31,8 @@ defmodule Wongi.Engine.Beta.Filter do
     def equivalent?(%@for{filter: filter}, %@for{filter: filter}, _rete), do: true
     def equivalent?(_, _, _), do: false
 
+    def index_keys(_, _), do: []
+
     @spec alpha_activate(
             Wongi.Engine.Beta.Filter.t(),
             Wongi.Engine.WME.t(),
@@ -47,7 +49,7 @@ defmodule Wongi.Engine.Beta.Filter do
 
     def beta_activate(%@for{filter: filter} = node, token, rete) do
       if Filter.pass?(filter, token) do
-        rete = Rete.add_token(rete, token)
+        rete = Rete.add_token(rete, node, token)
         betas = Rete.beta_subscriptions(rete, node)
         Common.beta_activate(betas, &Token.new(&1, [token], nil), rete)
       else
@@ -58,7 +60,7 @@ defmodule Wongi.Engine.Beta.Filter do
     def beta_deactivate(node, token, rete) do
       rete =
         rete
-        |> Rete.remove_token(token)
+        |> Rete.remove_token(node, token)
 
       rete
       |> Rete.beta_subscriptions(node)

@@ -38,6 +38,8 @@ defmodule Wongi.Engine.Beta.Root do
 
     def equivalent?(_, _, _), do: false
 
+    def index_keys(_, _), do: []
+
     @spec alpha_activate(Wongi.Engine.Beta.Root.t(), Wongi.Engine.WME.t(), Wongi.Engine.Rete.t()) ::
             no_return()
     defdelegate alpha_activate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening

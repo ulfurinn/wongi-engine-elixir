@@ -31,6 +31,8 @@ defmodule Wongi.Engine.Beta.Or do
 
     def equivalent?(_, _, _), do: false
 
+    def index_keys(_, _), do: []
+
     @spec alpha_activate(
             Wongi.Engine.Beta.Or.t(),
             Wongi.Engine.WME.t(),
@@ -46,7 +48,7 @@ defmodule Wongi.Engine.Beta.Or do
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(node, token, rete) do
-      rete = Rete.add_token(rete, token)
+      rete = Rete.add_token(rete, node, token)
       betas = Rete.beta_subscriptions(rete, node)
       Common.beta_activate(betas, &Token.new(&1, [token], nil), rete)
     end
@@ -54,7 +56,7 @@ defmodule Wongi.Engine.Beta.Or do
     def beta_deactivate(node, token, rete) do
       rete =
         rete
-        |> Rete.remove_token(token)
+        |> Rete.remove_token(node, token)
 
       rete
       |> Rete.beta_subscriptions(node)

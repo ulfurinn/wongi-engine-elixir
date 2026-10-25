@@ -69,7 +69,7 @@ defmodule Wongi.Engine.Beta.Aggregate do
 
     token_partition = if partition, do: partition.(token)
 
-    rete = Rete.add_token(rete, token)
+    rete = Rete.add_token(rete, node, token)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
   end
@@ -79,7 +79,7 @@ defmodule Wongi.Engine.Beta.Aggregate do
 
     token_partition = if partition, do: partition.(token)
 
-    rete = Rete.remove_token(rete, token)
+    rete = Rete.remove_token(rete, node, token)
     rete = Common.beta_deactivate(Rete.beta_subscriptions(rete, node), token, rete)
 
     evaluate_changed_partition(node, token_partition, partition, betas, rete)
@@ -141,6 +141,8 @@ defmodule Wongi.Engine.Beta.Aggregate do
         do: Keyword.equal?(opts1, opts2)
 
     def equivalent?(_, _, _), do: false
+
+    def index_keys(_, _), do: []
 
     def seed(node, beta, rete) do
       @for.evaluate(node, :seed, nil, beta, rete)

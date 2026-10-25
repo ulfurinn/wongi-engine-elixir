@@ -59,6 +59,8 @@ defmodule Wongi.Engine.Beta.NCC do
     # equivalence is a bit to think about weird for NCC
     def equivalent?(_, _, _), do: false
 
+    def index_keys(_, token), do: [Token.signature(token)]
+
     @spec alpha_activate(
             Wongi.Engine.Beta.NCC.t(),
             Wongi.Engine.WME.t(),
@@ -74,11 +76,11 @@ defmodule Wongi.Engine.Beta.NCC do
     defdelegate alpha_deactivate(node, alpha, rete), to: Wongi.Engine.Beta.NonAlphaListening
 
     def beta_activate(%@for{partner_ref: partner} = node, token, rete) do
-      rete = Rete.add_token(rete, token)
+      rete = Rete.add_token(rete, node, token)
 
       rete =
         rete
-        |> Rete.tokens(partner)
+        |> Rete.get_node_index(partner, Token.signature(token))
         |> Enum.reduce(rete, fn ncc_token, rete ->
           if Partner.owner_token?(token, ncc_token) do
             Rete.add_ncc_token(rete, token, ncc_token)
@@ -99,7 +101,7 @@ defmodule Wongi.Engine.Beta.NCC do
     def beta_deactivate(node, token, rete) do
       rete =
         rete
-        |> Rete.remove_token(token)
+        |> Rete.remove_token(node, token)
 
       rete
       |> Rete.beta_subscriptions(node)

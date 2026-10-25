@@ -37,6 +37,7 @@ defmodule Wongi.Engine.Rete do
     :indexes,
     :manual,
     :tokens,
+    :node_index,
     :tokens_by_parent,
     :tokens_by_wme,
     :neg_join_results,
@@ -66,6 +67,7 @@ defmodule Wongi.Engine.Rete do
         end,
       manual: MapSet.new(),
       tokens: %{},
+      node_index: %{},
       tokens_by_parent: %{},
       tokens_by_wme: %{},
       neg_join_results: JoinResults.new(),
@@ -355,7 +357,9 @@ defmodule Wongi.Engine.Rete do
     Map.get(beta_subscriptions, Beta.ref(node), [])
   end
 
-  def add_token(%__MODULE__{tokens: tokens} = rete, %Wongi.Engine.Token{} = token) do
+  # The node is passed in rather than looked up by token.node_ref, because a new
+  # node is seeded before it is added to the beta table.
+  def add_token(%__MODULE__{tokens: tokens} = rete, node, %Wongi.Engine.Token{} = token) do
     node_tokens =
       tokens
       |> Map.get_lazy(token.node_ref, &MapSet.new/0)
@@ -364,9 +368,10 @@ defmodule Wongi.Engine.Rete do
     rete
     |> put_tokens(token.node_ref, node_tokens)
     |> index_relations(token)
+    |> put_node_index(token, Beta.index_keys(node, token))
   end
 
-  def remove_token(%__MODULE__{tokens: tokens} = rete, token) do
+  def remove_token(%__MODULE__{tokens: tokens} = rete, node, token) do
     wmes = generated_wmes(rete, token)
 
     rete =
@@ -375,6 +380,7 @@ defmodule Wongi.Engine.Rete do
           rete
           |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
           |> unindex_relations(token)
+          |> delete_node_index(token, Beta.index_keys(node, token))
           |> remove_neg_join_result(token)
           |> remove_generator(token)
           |> remove_ncc(token)
@@ -389,6 +395,51 @@ defmodule Wongi.Engine.Rete do
 
       _ ->
         wmes |> Enum.reduce(rete, &retract(&2, &1, token))
+    end
+  end
+
+  # Per-node secondary index of the tokens a node holds, for nodes that need to
+  # find a subset of them without scanning all. What the keys mean is up to the
+  # node (Beta.index_keys); a token is stored once under each of its keys.
+  defp put_node_index(rete, _token, []), do: rete
+
+  defp put_node_index(%__MODULE__{node_index: node_index} = rete, token, keys) do
+    buckets =
+      node_index
+      |> Map.get(token.node_ref, %{})
+      |> then(&Enum.reduce(keys, &1, fn key, acc -> multi_put(acc, key, token) end))
+
+    %__MODULE__{rete | node_index: Map.put(node_index, token.node_ref, buckets)}
+  end
+
+  defp delete_node_index(rete, _token, []), do: rete
+
+  defp delete_node_index(%__MODULE__{node_index: node_index} = rete, token, keys) do
+    node_ref = token.node_ref
+
+    case node_index do
+      %{^node_ref => buckets} ->
+        buckets = Enum.reduce(keys, buckets, &multi_delete(&2, &1, token))
+
+        node_index =
+          if map_size(buckets) == 0,
+            do: Map.delete(node_index, node_ref),
+            else: Map.put(node_index, node_ref, buckets)
+
+        %__MODULE__{rete | node_index: node_index}
+
+      _ ->
+        rete
+    end
+  end
+
+  @doc false
+  def get_node_index(%__MODULE__{node_index: node_index}, node, key) do
+    node_ref = Beta.ref(node)
+
+    case node_index do
+      %{^node_ref => %{^key => bucket}} -> bucket
+      _ -> MapSet.new()
     end
   end
 
