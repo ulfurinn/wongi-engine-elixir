@@ -67,6 +67,9 @@ jobs:
 
     name: Benchmark
     runs-on: ubuntu-latest
+    permissions:
+      # to push results from main to gh-pages
+      contents: write
 
     steps:
       - uses: actions/checkout@v7
@@ -94,14 +97,20 @@ jobs:
         env:
           MIX_ENV: prod
 
-      - name: Summarise
-        run: |
-          {
-            echo '### Benchmark (n = 2000, median of 5 runs)'
-            echo '```'
-            cat bench.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+      # Results from main are kept in the gh-pages branch, which also has a chart
+      # of them under dev/bench. Anything else is compared against the latest of
+      # those, and fails if it is much slower.
+      - name: Compare with earlier results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Workload
+          tool: customSmallerIsBetter
+          output-file-path: bench.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          alert-threshold: '150%'
+          fail-on-alert: true
+          summary-always: true
 
       - name: Upload results
         uses: actions/upload-artifact@v4

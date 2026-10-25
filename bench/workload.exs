@@ -100,15 +100,10 @@ phases =
 
 for {label, ms} <- phases, do: IO.puts("#{String.pad_trailing(label, 12)} #{ms} ms")
 
+# In the format of github-action-benchmark's customSmallerIsBetter tool.
 if path = options[:json] do
-  report = %{
-    commit: System.get_env("GITHUB_SHA"),
-    n: n,
-    runs: runs,
-    elixir: System.version(),
-    otp: System.otp_release(),
-    phases_ms: Map.new(phases)
-  }
+  extra = "n = #{n}, median of #{runs}, Elixir #{System.version()}, OTP #{System.otp_release()}"
+  report = for {label, ms} <- phases, do: %{name: label, unit: "ms", value: ms, extra: extra}
 
   File.write!(path, JSON.encode!(report))
 end
