@@ -31,6 +31,25 @@ defmodule Wongi.Scenario do
     compile(Engine.new(), scenario.rules())
   end
 
+  @doc """
+  The rules with each run of consecutive positive matches shuffled, as rules
+  written independently of each other might have them. This does not change
+  what they match.
+  """
+  def shuffle_matches(rules) do
+    Enum.map(rules, fn rule ->
+      forall =
+        rule.forall
+        |> Enum.chunk_by(&match?(%DSL.Has{filters: nil}, &1))
+        |> Enum.flat_map(fn
+          [%DSL.Has{filters: nil} | _] = matches -> Enum.shuffle(matches)
+          clauses -> clauses
+        end)
+
+      %{rule | forall: forall}
+    end)
+  end
+
   def compile(rete, rules) do
     Enum.reduce(rules, rete, &Engine.compile(&2, &1))
   end

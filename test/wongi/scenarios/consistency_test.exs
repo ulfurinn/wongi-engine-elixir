@@ -100,6 +100,24 @@ defmodule Wongi.Scenarios.ConsistencyTest do
         end
       end
 
+      property "reordered rules agree with rules compiled as written" do
+        check all(ops <- operations(@scenario), seed <- StreamData.integer(), max_runs: @runs) do
+          :rand.seed(:exsss, seed)
+          rules = Scenario.shuffle_matches(@scenario.rules())
+          plain = Engine.compile_all(Engine.new(), rules)
+          reordered = Engine.compile_all(Engine.new(), rules, reorder: true)
+
+          Enum.reduce(ops, {plain, reordered, MapSet.new()}, fn op, {plain, reordered, facts} ->
+            {plain, _} = apply_operation(op, {plain, facts})
+            {reordered, facts} = apply_operation(op, {reordered, facts})
+
+            assert Scenario.observe(reordered, rules) == Scenario.observe(plain, rules)
+
+            {plain, reordered, facts}
+          end)
+        end
+      end
+
       property "rules compiled at any point agree with rules compiled first" do
         check all(
                 ops <- operations(@scenario),
