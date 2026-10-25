@@ -64,11 +64,28 @@ defmodule Wongi.Engine.Compiler do
     case find_existing(context, node) do
       nil ->
         context
-        |> advance(node)
+        |> advance_production(node)
 
       node ->
         context
         |> advance_existing(node)
     end
+  end
+
+  # Unlike other nodes, a production is subscribed to its parent before it is
+  # seeded. Its actions run as it is seeded, and the facts they generate may
+  # produce new tokens in its parent, which it would otherwise miss. The parent
+  # seeds it from the tokens it had before, so it does not get any twice.
+  defp advance_production(%__MODULE__{rete: rete} = context, node) do
+    [parent_ref] = Beta.parent_refs(node)
+
+    rete =
+      rete
+      |> Rete.add_beta(node)
+      |> then(&Beta.seed(parent_ref, node, &1))
+
+    context
+    |> put_node(node)
+    |> put_rete(rete)
   end
 end

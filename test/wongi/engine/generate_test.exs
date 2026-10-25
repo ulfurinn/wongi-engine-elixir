@@ -280,6 +280,23 @@ defmodule Wongi.Engine.GenerateTest do
         do: [gen(var(:x), :in, var(:h))]
       )
 
+  test "a rule compiled after the facts sees the facts it generates itself" do
+    nested = nested_membership()
+
+    rete =
+      new()
+      |> assert(:alice, :member_of, :backend)
+      |> assert(:backend, :part_of, :everyone)
+      |> assert(:everyone, :part_of, :everyone)
+      |> compile(direct_membership())
+      |> compile(nested)
+
+    assert [_, _] = rete |> tokens(nested.ref) |> Enum.to_list()
+
+    assert [:backend, :everyone] =
+             rete |> select(:alice, :in, :_) |> Enum.map(& &1.object) |> Enum.sort()
+  end
+
   test "a fact derived again while it is being retracted is matched once" do
     nested = nested_membership()
 
