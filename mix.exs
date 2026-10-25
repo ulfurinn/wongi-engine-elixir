@@ -10,7 +10,8 @@ defmodule Wongi.Engine.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: [
-        plt_file: {:no_warn, "plts/dialyzer.plt"}
+        plt_file: {:no_warn, "plts/dialyzer.plt"},
+        plt_add_apps: [:mix]
       ],
       name: "Wongi.Engine",
       description: "A pure-Elixir rule engine.",
@@ -45,6 +46,7 @@ defmodule Wongi.Engine.MixProject do
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "dev"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
