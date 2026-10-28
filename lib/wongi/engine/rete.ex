@@ -357,13 +357,17 @@ defmodule Wongi.Engine.Rete do
     Map.get(beta_subscriptions, Beta.ref(node), [])
   end
 
+  # Token collections here are maps from token ref to token rather than sets of
+  # tokens: a token holds its parents, so hashing a whole token for set
+  # membership gets more expensive the deeper it is in the network.
+
   # The node is passed in rather than looked up by token.node_ref, because a new
   # node is seeded before it is added to the beta table.
   def add_token(%__MODULE__{tokens: tokens} = rete, node, %Wongi.Engine.Token{} = token) do
     node_tokens =
       tokens
-      |> Map.get_lazy(token.node_ref, &MapSet.new/0)
-      |> MapSet.put(token)
+      |> Map.get(token.node_ref, %{})
+      |> Map.put(token.ref, token)
 
     rete
     |> put_tokens(token.node_ref, node_tokens)
@@ -378,7 +382,7 @@ defmodule Wongi.Engine.Rete do
       case Map.fetch(tokens, token.node_ref) do
         {:ok, node_tokens} ->
           rete
-          |> put_tokens(token.node_ref, MapSet.delete(node_tokens, token))
+          |> put_tokens(token.node_ref, Map.delete(node_tokens, token.ref))
           |> unindex_relations(token)
           |> delete_node_index(token, Beta.index_keys(node, token))
           |> remove_neg_join_result(token)
@@ -438,19 +442,19 @@ defmodule Wongi.Engine.Rete do
     node_ref = Beta.ref(node)
 
     case node_index do
-      %{^node_ref => %{^key => bucket}} -> bucket
-      _ -> MapSet.new()
+      %{^node_ref => %{^key => bucket}} -> Map.values(bucket)
+      _ -> []
     end
   end
 
   @doc false
   def child_tokens(%__MODULE__{tokens_by_parent: index}, node, %Token{ref: parent_ref}) do
-    Map.get(index, {Beta.ref(node), parent_ref}, [])
+    index |> Map.get({Beta.ref(node), parent_ref}, %{}) |> Map.values()
   end
 
   @doc false
   def tokens_with_wme(%__MODULE__{tokens_by_wme: index}, node, %WME{} = wme) do
-    Map.get(index, {Beta.ref(node), wme}, [])
+    index |> Map.get({Beta.ref(node), wme}, %{}) |> Map.values()
   end
 
   defp index_relations(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
@@ -484,14 +488,14 @@ defmodule Wongi.Engine.Rete do
   end
 
   defp multi_put(index, key, token) do
-    Map.update(index, key, MapSet.new([token]), &MapSet.put(&1, token))
+    Map.update(index, key, %{token.ref => token}, &Map.put(&1, token.ref, token))
   end
 
   defp multi_delete(index, key, token) do
     case index do
       %{^key => set} ->
-        set = MapSet.delete(set, token)
-        if Enum.empty?(set), do: Map.delete(index, key), else: Map.put(index, key, set)
+        set = Map.delete(set, token.ref)
+        if map_size(set) == 0, do: Map.delete(index, key), else: Map.put(index, key, set)
 
       _ ->
         index
@@ -499,7 +503,13 @@ defmodule Wongi.Engine.Rete do
   end
 
   def tokens(%__MODULE__{tokens: tokens}, node) do
-    Map.get_lazy(tokens, Beta.ref(node), &MapSet.new/0)
+    tokens |> Map.get(Beta.ref(node), %{}) |> Map.values()
+  end
+
+  @doc false
+  def has_token?(%__MODULE__{tokens: tokens}, node, %Token{ref: ref}) do
+    node_ref = Beta.ref(node)
+    match?(%{^node_ref => %{^ref => _}}, tokens)
   end
 
   def add_neg_join_result(%__MODULE__{neg_join_results: jrs} = rete, token, wme) do
@@ -673,7 +683,7 @@ defmodule Wongi.Engine.Rete do
 
   defp put_tokens(%__MODULE__{tokens: tokens} = rete, node_ref, node_tokens) do
     tokens =
-      if Enum.empty?(node_tokens) do
+      if map_size(node_tokens) == 0 do
         Map.delete(tokens, node_ref)
       else
         Map.put(tokens, node_ref, node_tokens)

@@ -250,7 +250,7 @@ defmodule Wongi.Engine do
 
   @doc "Returns a set of all tokens for the given production node reference."
   @spec tokens(t(), reference()) :: MapSet.t(Wongi.Engine.Token.t())
-  defdelegate tokens(rete, node), to: Rete
+  def tokens(rete, node), do: rete |> Rete.tokens(node) |> MapSet.new()
 
   @doc "Returns all production node references."
   @spec productions(t()) :: MapSet.t(reference())
