@@ -10,6 +10,9 @@ defmodule Wongi.Engine.Beta.JoinKey do
   # `has(x, :friend, x)`, are supplied by the WME during matching and are never
   # in the token, so they are left out. A node left with nothing to index on
   # indexes no tokens at all.
+  #
+  # The fields depend only on the node's tests and assignments, so nodes compute
+  # them once with index_fields/2 when they are built.
   alias Wongi.Engine.Rete
   alias Wongi.Engine.Token
 
@@ -25,8 +28,8 @@ defmodule Wongi.Engine.Beta.JoinKey do
     end
   end
 
-  defp token_key(node, token) do
-    case index_fields(node) do
+  defp token_key(%{index_fields: index_fields}, token) do
+    case index_fields do
       [] -> nil
       fields -> fields |> Enum.map(fn {_field, var} -> Token.fetch(token, var) end) |> values()
     end
@@ -36,8 +39,8 @@ defmodule Wongi.Engine.Beta.JoinKey do
     if Enum.all?(fetched, &match?({:ok, _}, &1)), do: Enum.map(fetched, &elem(&1, 1))
   end
 
-  def wme_key(node, wme) do
-    case index_fields(node) do
+  def wme_key(%{index_fields: index_fields}, wme) do
+    case index_fields do
       [] -> nil
       fields -> for {field, _var} <- fields, do: wme[field]
     end
@@ -51,7 +54,7 @@ defmodule Wongi.Engine.Beta.JoinKey do
     end
   end
 
-  defp index_fields(%{tests: tests, assignments: assignments}) do
+  def index_fields(tests, assignments) do
     local_vars = Map.values(assignments)
 
     for field <- @fields,

@@ -8,7 +8,7 @@ defmodule Wongi.Engine.Beta.Join do
   alias Wongi.Engine.WME
 
   @derive Inspect
-  defstruct [:ref, :parent_ref, :template, :tests, :assignments, :filters]
+  defstruct [:ref, :parent_ref, :template, :tests, :assignments, :filters, :index_fields]
 
   def new(parent_ref, template, tests, assignments, opts \\ []) do
     %__MODULE__{
@@ -17,6 +17,7 @@ defmodule Wongi.Engine.Beta.Join do
       template: template,
       tests: tests,
       assignments: assignments,
+      index_fields: JoinKey.index_fields(tests, assignments),
       filters: opts[:when]
     }
   end

@@ -6,7 +6,7 @@ defmodule Wongi.Engine.Beta.Negative do
   alias Wongi.Engine.WME
 
   @derive Inspect
-  defstruct [:ref, :parent_ref, :template, :tests, :assignments]
+  defstruct [:ref, :parent_ref, :template, :tests, :assignments, :index_fields]
 
   def new(parent_ref, template, tests, assignments) do
     %__MODULE__{
@@ -14,7 +14,8 @@ defmodule Wongi.Engine.Beta.Negative do
       parent_ref: parent_ref,
       template: template,
       tests: tests,
-      assignments: assignments
+      assignments: assignments,
+      index_fields: JoinKey.index_fields(tests, assignments)
     }
   end
 
