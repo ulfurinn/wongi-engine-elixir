@@ -91,6 +91,10 @@ Removing a token or a fact uses these to find what to remove from the children (
 
 **NCC signatures.** A partner token is owned by an `NCC` token when it, or one of its ancestors, duplicates the `NCC` token: same fact, same bindings, same parents. That is the token's signature (`Token.signature/1`). Indexing `NCC` tokens by their own signature and partner tokens by every signature in their lineage pairs them up. Both sides still check the candidates with `NCC.Partner.owner_token?/2`.
 
+### Without indexes
+
+`Wongi.Engine.new(token_indexes: false)` turns all of these indexes off. `Rete.add_token/3` and `Rete.remove_token/3` then leave them empty, and the lookups scan the node's tokens instead: `child_tokens` and `tokens_with_wme` filter them, and `get_node_index` returns all of them, which invariant 5 allows. Keeping the indexes up to date costs a few map updates on every token, which outweighs what they save when rules produce many tokens and the keys narrow little.
+
 ## Invariants
 
 1. **Results don't depend on the path taken.** The facts in memory and the matches of every rule depend only on which facts are asserted. They don't depend on the order of the facts, the order of the rules, or whether a rule was compiled before or after its facts. The one exception is the bindings visible after an aggregate (see "Known limitations"). The consistency properties check this (see "Testing").
@@ -108,6 +112,7 @@ Removing a token or a fact uses these to find what to remove from the children (
 ## Testing
 
 - `test/wongi/engine` has unit tests by node type and DSL feature. `generate_test.exs` has most of the propagation corner cases above, each with a minimal reproduction.
+- `TOKEN_INDEXES=false mix test` runs everything without token indexes. Tests build engines with `new/0` from `Wongi.TestCase`, which follows it.
 - `test/wongi/scenarios` has four realistic rule sets of 12 to 19 rules each (defined in `test/support/scenarios`), with worked examples for each. `consistency_test.exs` checks invariants 1 and 2 on all of them, with random sequences of assertions and retractions drawn from each scenario's own domain (`Wongi.Scenario` and `fact/0`).
 
 The properties run 100 times each by default, and 1000 times in CI. For a longer run:
@@ -127,6 +132,7 @@ To add a scenario, implement the `Wongi.Scenario` behaviour, add the module to `
 ```sh
 MIX_ENV=prod mix run bench/workload.exs 2000 --runs 5
 MIX_ENV=prod mix run bench/workload.exs 2000 --profile retract
+MIX_ENV=prod mix run bench/workload.exs 2000 --runs 5 --no-token-indexes
 ```
 
 CI runs it on every build. Results from `main` are kept in the `gh-pages` branch, with a chart under `dev/bench/`. Other builds fail if a phase is more than 1.5 times slower than the latest result from `main`.

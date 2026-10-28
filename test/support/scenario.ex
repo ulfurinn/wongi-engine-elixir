@@ -28,7 +28,7 @@ defmodule Wongi.Scenario do
 
   @doc "A fresh engine with all of the scenario's rules."
   def engine(scenario) do
-    compile(Engine.new(), scenario.rules())
+    compile(Engine.new(Wongi.TestCase.engine_opts()), scenario.rules())
   end
 
   def compile(rete, rules) do

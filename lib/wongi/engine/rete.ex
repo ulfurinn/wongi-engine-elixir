@@ -53,10 +53,12 @@ defmodule Wongi.Engine.Rete do
     :beta_root,
     :beta_table,
     :beta_subscriptions,
-    :productions
+    :productions,
+    :token_indexes
   ]
 
-  def new do
+  def new(opts \\ []) do
+    opts = Keyword.validate!(opts, token_indexes: true)
     root = Root.new()
 
     %__MODULE__{
@@ -83,7 +85,8 @@ defmodule Wongi.Engine.Rete do
       beta_root: root,
       beta_table: %{Beta.ref(root) => root},
       beta_subscriptions: %{},
-      productions: MapSet.new()
+      productions: MapSet.new(),
+      token_indexes: opts[:token_indexes]
     }
     |> seed()
   end
@@ -371,8 +374,7 @@ defmodule Wongi.Engine.Rete do
 
     rete
     |> put_tokens(token.node_ref, node_tokens)
-    |> index_relations(token)
-    |> put_node_index(token, Beta.index_keys(node, token))
+    |> index_token(node, token)
   end
 
   def remove_token(%__MODULE__{tokens: tokens} = rete, node, token) do
@@ -383,8 +385,7 @@ defmodule Wongi.Engine.Rete do
         {:ok, node_tokens} ->
           rete
           |> put_tokens(token.node_ref, Map.delete(node_tokens, token.ref))
-          |> unindex_relations(token)
-          |> delete_node_index(token, Beta.index_keys(node, token))
+          |> unindex_token(node, token)
           |> remove_neg_join_result(token)
           |> remove_generator(token)
           |> remove_ncc(token)
@@ -400,6 +401,26 @@ defmodule Wongi.Engine.Rete do
       _ ->
         wmes |> Enum.reduce(rete, &retract(&2, &1, token))
     end
+  end
+
+  # Without token indexes, the lookups below fall back to scanning the node's
+  # tokens. That makes retraction and selective joins slower, but saves keeping
+  # the indexes up to date on every token, which dominates when rules produce
+  # many tokens and the indexes narrow little.
+  defp index_token(%__MODULE__{token_indexes: false} = rete, _node, _token), do: rete
+
+  defp index_token(rete, node, token) do
+    rete
+    |> index_relations(token)
+    |> put_node_index(token, Beta.index_keys(node, token))
+  end
+
+  defp unindex_token(%__MODULE__{token_indexes: false} = rete, _node, _token), do: rete
+
+  defp unindex_token(rete, node, token) do
+    rete
+    |> unindex_relations(token)
+    |> delete_node_index(token, Beta.index_keys(node, token))
   end
 
   # Per-node secondary index of the tokens a node holds, for nodes that need to
@@ -437,7 +458,11 @@ defmodule Wongi.Engine.Rete do
     end
   end
 
+  # Without token indexes, this returns all of the node's tokens. Callers check
+  # every token they get anyway, as the index only narrows down the candidates.
   @doc false
+  def get_node_index(%__MODULE__{token_indexes: false} = rete, node, _key), do: tokens(rete, node)
+
   def get_node_index(%__MODULE__{node_index: node_index}, node, key) do
     node_ref = Beta.ref(node)
 
@@ -448,6 +473,9 @@ defmodule Wongi.Engine.Rete do
   end
 
   @doc false
+  def child_tokens(%__MODULE__{token_indexes: false} = rete, node, %Token{} = parent),
+    do: rete |> tokens(node) |> Enum.filter(&Token.child_of?(&1, parent))
+
   def child_tokens(%__MODULE__{tokens_by_parent: index}, node, %Token{ref: parent_ref}) do
     node_ref = Beta.ref(node)
 
@@ -458,6 +486,9 @@ defmodule Wongi.Engine.Rete do
   end
 
   @doc false
+  def tokens_with_wme(%__MODULE__{token_indexes: false} = rete, node, %WME{} = wme),
+    do: rete |> tokens(node) |> Enum.filter(&Token.has_wme?(&1, wme))
+
   def tokens_with_wme(%__MODULE__{tokens_by_wme: index}, node, %WME{} = wme) do
     node_ref = Beta.ref(node)
 

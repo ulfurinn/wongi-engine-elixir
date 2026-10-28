@@ -5,6 +5,28 @@ defmodule Wongi.Engine.EngineTest do
     %{rete: new()}
   end
 
+  describe "new/1" do
+    test "can leave tokens unindexed" do
+      {rete, ref} =
+        Wongi.Engine.new(token_indexes: false)
+        |> compile_and_get_ref(
+          rule(forall: [has(var(:x), :p, var(:y)), has(var(:y), :q, var(:z))])
+        )
+
+      rete = rete |> assert(:a, :p, :b) |> assert(:b, :q, :c)
+
+      assert [_] = rete |> tokens(ref) |> Enum.to_list()
+      assert %{tokens_by_parent: index, tokens_by_wme: index, node_index: index} = rete
+      assert index == %{}
+
+      assert [] = rete |> retract(:b, :q, :c) |> tokens(ref) |> Enum.to_list()
+    end
+
+    test "rejects unknown options" do
+      assert_raise ArgumentError, fn -> Wongi.Engine.new(token_index: false) end
+    end
+  end
+
   describe "assert/2" do
     test "adds the WME to storage", %{rete: rete} do
       wme = WME.new(:a, :b, :c)

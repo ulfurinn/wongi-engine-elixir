@@ -56,6 +56,12 @@ jobs:
           # runs of each consistency property in test/wongi/scenarios
           PROPERTY_RUNS: 1000
 
+      - name: Run tests without token indexes
+        run: mix test
+        env:
+          TOKEN_INDEXES: "false"
+          PROPERTY_RUNS: 1000
+
       - name: Create PLTs
         if: steps.plt_cache.outputs.cache-hit != 'true'
         run: mix dialyzer --plt

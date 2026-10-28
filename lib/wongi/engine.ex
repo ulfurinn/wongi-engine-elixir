@@ -202,9 +202,18 @@ defmodule Wongi.Engine do
 
   @doc """
   Creates a new engine instance.
+
+  ## Options
+
+    * `:token_indexes` - whether to index partial matches by their parents, by
+      the facts they contain, and by the values that joins and negations test
+      (default `true`). The indexes make retraction and selective joins much
+      faster, but must be updated on every new partial match. Rule sets that
+      produce many partial matches, rarely retract facts, or join on values
+      shared by many facts may run faster without them.
   """
-  @spec new() :: t()
-  defdelegate new(), to: Rete
+  @spec new(keyword()) :: t()
+  defdelegate new(opts \\ []), to: Rete
 
   @doc """
   Returns an engine with the given rule installed.

@@ -1,12 +1,19 @@
-# Usage: mix run bench/workload.exs [n] [--profile [phase]] [--runs k] [--json file]
+# Usage: mix run bench/workload.exs [n] [--profile [phase]] [--runs k] [--json file] [--no-token-indexes]
 # Dependency-free benchmark; prints wall time per phase.
 # With --profile, runs :eprof over the assert phase, or the one given.
 # With --runs, repeats the workload k times and reports the median of each phase.
 # With --json, also writes the timings to a file.
+# With --no-token-indexes, runs on an engine without token indexes.
 use Wongi.Engine.DSL
 
+{token_indexes?, argv} =
+  case Enum.split_with(System.argv(), &(&1 == "--no-token-indexes")) do
+    {[], argv} -> {true, argv}
+    {_, argv} -> {false, argv}
+  end
+
 {options, argv} =
-  Enum.reduce([runs: "--runs", json: "--json"], {%{}, System.argv()}, fn {key, flag}, {options, argv} ->
+  Enum.reduce([runs: "--runs", json: "--json"], {%{}, argv}, fn {key, flag}, {options, argv} ->
     case Enum.split_while(argv, &(&1 != flag)) do
       {before, [^flag, value | rest]} -> {Map.put(options, key, value), before ++ rest}
       _ -> {options, argv}
@@ -39,7 +46,7 @@ profiled = fn label, fun ->
 end
 
 rete =
-  Wongi.Engine.new()
+  Wongi.Engine.new(token_indexes: token_indexes?)
   |> Wongi.Engine.compile(
     rule(:join, forall: [has(var(:p), :parent, var(:c)), has(var(:c), :age, var(:a)), has(var(:p), :name, var(:n))])
   )

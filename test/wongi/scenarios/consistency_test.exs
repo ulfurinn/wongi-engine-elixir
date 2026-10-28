@@ -14,6 +14,8 @@ defmodule Wongi.Scenarios.ConsistencyTest do
   @runs String.to_integer(System.get_env("PROPERTY_RUNS", "100"))
   @moduletag timeout: :infinity
 
+  defp new_engine, do: Engine.new(Wongi.TestCase.engine_opts())
+
   @scenarios [
     Wongi.Scenarios.DocumentAccess,
     Wongi.Scenarios.OrderFulfilment,
@@ -62,7 +64,7 @@ defmodule Wongi.Scenarios.ConsistencyTest do
   # The order of the rules matters to the engine too, as it decides the order
   # in which nodes are activated, so it is shuffled as well.
   defp from_scratch(rules, facts, seed) do
-    Engine.new()
+    new_engine()
     |> Scenario.compile(shuffle(rules, seed))
     |> Scenario.assert_all(shuffle(Enum.to_list(facts), seed))
   end
@@ -74,7 +76,7 @@ defmodule Wongi.Scenarios.ConsistencyTest do
       property "every step agrees with an engine built from scratch" do
         check all(ops <- operations(@scenario), seed <- StreamData.integer(), max_runs: @runs) do
           rules = @scenario.rules()
-          clean = Scenario.compile(Engine.new(), rules)
+          clean = Scenario.compile(new_engine(), rules)
 
           Enum.reduce(ops, {clean, MapSet.new()}, fn op, state ->
             {rete, facts} = apply_operation(op, state)
@@ -90,7 +92,7 @@ defmodule Wongi.Scenarios.ConsistencyTest do
       property "retracting everything returns to the initial state" do
         check all(ops <- operations(@scenario), seed <- StreamData.integer(), max_runs: @runs) do
           rules = @scenario.rules()
-          clean = Scenario.compile(Engine.new(), rules)
+          clean = Scenario.compile(new_engine(), rules)
 
           {rete, facts} = Enum.reduce(ops, {clean, MapSet.new()}, &apply_operation/2)
           rete = Scenario.retract_all(rete, shuffle(Enum.to_list(facts), seed))
@@ -117,7 +119,7 @@ defmodule Wongi.Scenarios.ConsistencyTest do
           {rete, facts} =
             ops
             |> Enum.with_index()
-            |> Enum.reduce({Engine.new(), MapSet.new()}, fn {op, i}, {rete, facts} ->
+            |> Enum.reduce({new_engine(), MapSet.new()}, fn {op, i}, {rete, facts} ->
               rete = Scenario.compile(rete, Map.get(schedule, i, []))
               apply_operation(op, {rete, facts})
             end)
