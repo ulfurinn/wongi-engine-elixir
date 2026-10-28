@@ -449,24 +449,34 @@ defmodule Wongi.Engine.Rete do
 
   @doc false
   def child_tokens(%__MODULE__{tokens_by_parent: index}, node, %Token{ref: parent_ref}) do
-    index |> Map.get({Beta.ref(node), parent_ref}, %{}) |> Map.values()
+    node_ref = Beta.ref(node)
+
+    case index do
+      %{^node_ref => %{^parent_ref => bucket}} -> Map.values(bucket)
+      _ -> []
+    end
   end
 
   @doc false
   def tokens_with_wme(%__MODULE__{tokens_by_wme: index}, node, %WME{} = wme) do
-    index |> Map.get({Beta.ref(node), wme}, %{}) |> Map.values()
+    node_ref = Beta.ref(node)
+
+    case index do
+      %{^node_ref => %{^wme => bucket}} -> Map.values(bucket)
+      _ -> []
+    end
   end
 
   defp index_relations(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
     by_parent =
-      Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
-        multi_put(acc, {node_ref, parent.ref}, token)
+      update_node_relations(rete.tokens_by_parent, node_ref, fn buckets ->
+        Enum.reduce(token.parents, buckets, &multi_put(&2, &1.ref, token))
       end)
 
     by_wme =
       case token.wme do
         nil -> rete.tokens_by_wme
-        wme -> multi_put(rete.tokens_by_wme, {node_ref, wme}, token)
+        wme -> update_node_relations(rete.tokens_by_wme, node_ref, &multi_put(&1, wme, token))
       end
 
     %__MODULE__{rete | tokens_by_parent: by_parent, tokens_by_wme: by_wme}
@@ -474,17 +484,27 @@ defmodule Wongi.Engine.Rete do
 
   defp unindex_relations(%__MODULE__{} = rete, %Token{node_ref: node_ref} = token) do
     by_parent =
-      Enum.reduce(token.parents, rete.tokens_by_parent, fn parent, acc ->
-        multi_delete(acc, {node_ref, parent.ref}, token)
+      update_node_relations(rete.tokens_by_parent, node_ref, fn buckets ->
+        Enum.reduce(token.parents, buckets, &multi_delete(&2, &1.ref, token))
       end)
 
     by_wme =
       case token.wme do
         nil -> rete.tokens_by_wme
-        wme -> multi_delete(rete.tokens_by_wme, {node_ref, wme}, token)
+        wme -> update_node_relations(rete.tokens_by_wme, node_ref, &multi_delete(&1, wme, token))
       end
 
     %__MODULE__{rete | tokens_by_parent: by_parent, tokens_by_wme: by_wme}
+  end
+
+  # The relation indexes are nested by node, which keeps the maps that change on
+  # every token small.
+  defp update_node_relations(index, node_ref, fun) do
+    buckets = fun.(Map.get(index, node_ref, %{}))
+
+    if map_size(buckets) == 0,
+      do: Map.delete(index, node_ref),
+      else: Map.put(index, node_ref, buckets)
   end
 
   defp multi_put(index, key, token) do
