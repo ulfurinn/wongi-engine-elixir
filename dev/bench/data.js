@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793109195108,
+  "lastUpdate": 1793211832125,
   "repoUrl": "https://github.com/ulfurinn/wongi-engine-elixir",
   "entries": {
     "Workload": [
@@ -82,6 +82,48 @@ window.BENCHMARK_DATA = {
           {
             "name": "retract",
             "value": 129,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.4, OTP 29"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "committer": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "distinct": true,
+          "id": "da464296b9037eaf62b9557e01a567c6647863ba",
+          "message": "Add an option to run without token indexes\n\nWongi.Engine.new(token_indexes: false) skips the parent, fact and\nnode-specific token indexes and scans the node's tokens instead. They\nare kept by default; rule sets that produce many tokens and rarely\nretract can run faster without them.\n\nTOKEN_INDEXES=false mix test runs the suite in that mode, and CI does\nso on every build.",
+          "timestamp": "2026-10-28T19:14:07+01:00",
+          "tree_id": "8ede3c03ba85c7853d31e07101f1f40071ceb1b0",
+          "url": "https://github.com/ulfurinn/wongi-engine-elixir/commit/da464296b9037eaf62b9557e01a567c6647863ba"
+        },
+        "date": 1793211831509,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "assert",
+            "value": 193,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.4, OTP 29"
+          },
+          {
+            "name": "retract bans",
+            "value": 33,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.4, OTP 29"
+          },
+          {
+            "name": "retract",
+            "value": 158,
             "unit": "ms",
             "extra": "n = 2000, median of 5, Elixir 1.20.4, OTP 29"
           }
