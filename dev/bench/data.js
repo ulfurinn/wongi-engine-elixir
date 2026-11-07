@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794073664084,
+  "lastUpdate": 1794073685156,
   "repoUrl": "https://github.com/ulfurinn/wongi-engine-elixir",
   "entries": {
     "Workload": [
@@ -292,6 +292,48 @@ window.BENCHMARK_DATA = {
           {
             "name": "retract",
             "value": 177,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "distinct": true,
+          "id": "62938d934aa733d93c2674b8b73d2593766df862",
+          "message": "Update dependency erlang/otp to v29.1.2",
+          "timestamp": "2026-11-07T18:47:41+01:00",
+          "tree_id": "d395a324c2a2a64ff2e484bd4d2f589cd0eb6632",
+          "url": "https://github.com/ulfurinn/wongi-engine-elixir/commit/62938d934aa733d93c2674b8b73d2593766df862"
+        },
+        "date": 1794073684444,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "assert",
+            "value": 196,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract bans",
+            "value": 31,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract",
+            "value": 158,
             "unit": "ms",
             "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
           }
