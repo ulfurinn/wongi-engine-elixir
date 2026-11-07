@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793218339882,
+  "lastUpdate": 1794057569860,
   "repoUrl": "https://github.com/ulfurinn/wongi-engine-elixir",
   "entries": {
     "Workload": [
@@ -168,6 +168,48 @@ window.BENCHMARK_DATA = {
             "value": 149,
             "unit": "ms",
             "extra": "n = 2000, median of 5, Elixir 1.20.4, OTP 29"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "distinct": true,
+          "id": "97bb94769d3a6b07ba690050b44bcb55f5ab054f",
+          "message": "Update dependency elixir-lang/elixir to v1.20.5",
+          "timestamp": "2026-11-07T14:19:07+01:00",
+          "tree_id": "ba6add0c4125368373d9530549cfe2c7fbad5fe7",
+          "url": "https://github.com/ulfurinn/wongi-engine-elixir/commit/97bb94769d3a6b07ba690050b44bcb55f5ab054f"
+        },
+        "date": 1794057569329,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "assert",
+            "value": 136,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract bans",
+            "value": 22,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract",
+            "value": 116,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
           }
         ]
       }
