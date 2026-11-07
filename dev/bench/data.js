@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794057611190,
+  "lastUpdate": 1794073664084,
   "repoUrl": "https://github.com/ulfurinn/wongi-engine-elixir",
   "entries": {
     "Workload": [
@@ -250,6 +250,48 @@ window.BENCHMARK_DATA = {
           {
             "name": "retract",
             "value": 117,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "distinct": true,
+          "id": "51d13e46bfa76a592649de174a6ec2d144eb378b",
+          "message": "Pin dependencies",
+          "timestamp": "2026-11-07T18:47:22+01:00",
+          "tree_id": "078bdbc3b04dc4689fce08df4da6ba1affb0e480",
+          "url": "https://github.com/ulfurinn/wongi-engine-elixir/commit/51d13e46bfa76a592649de174a6ec2d144eb378b"
+        },
+        "date": 1794073663734,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "assert",
+            "value": 176,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract bans",
+            "value": 30,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract",
+            "value": 177,
             "unit": "ms",
             "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
           }
