@@ -3,5 +3,9 @@
   "extends": [
     "config:recommended",
     "helpers:pinGitHubActionDigests"
-  ]
+  ],
+  "constraints": {
+    "elixir": "1.20.5",
+    "erlang": "29.1.2"
+  }
 }
