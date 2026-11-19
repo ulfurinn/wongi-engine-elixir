@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795130704542,
+  "lastUpdate": 1795131866117,
   "repoUrl": "https://github.com/ulfurinn/wongi-engine-elixir",
   "entries": {
     "Workload": [
@@ -460,6 +460,48 @@ window.BENCHMARK_DATA = {
           {
             "name": "retract",
             "value": 158,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "ulfurinn@ulfurinn.net",
+            "name": "Valeri Sokolov",
+            "username": "ulfurinn"
+          },
+          "distinct": true,
+          "id": "61bc8627c8e7a59c9f8e53134e8737b6f44b2494",
+          "message": "Update dependency credo to v1.7.19",
+          "timestamp": "2026-11-20T00:44:03+01:00",
+          "tree_id": "5ec7bc2d9abf835467713821b860074b119ed1d4",
+          "url": "https://github.com/ulfurinn/wongi-engine-elixir/commit/61bc8627c8e7a59c9f8e53134e8737b6f44b2494"
+        },
+        "date": 1795131865431,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "assert",
+            "value": 157,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract bans",
+            "value": 24,
+            "unit": "ms",
+            "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
+          },
+          {
+            "name": "retract",
+            "value": 117,
             "unit": "ms",
             "extra": "n = 2000, median of 5, Elixir 1.20.5, OTP 29"
           }
