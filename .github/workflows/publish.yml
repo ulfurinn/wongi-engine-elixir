@@ -1,0 +1,50 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+    with:
+      bench: false
+    permissions:
+      # the called workflow's bench job declares contents: write; GitHub checks
+      # this even though the job is skipped here
+      contents: write
+
+  publish:
+    needs: test
+    name: Publish to Hex.pm
+    runs-on: ubuntu-latest
+    environment: hexpm
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
+        id: beam
+        with:
+          elixir-version: "v1.20.5"
+          otp-version: "29.1.2"
+
+      - name: Restore dependencies cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Build
+        run: mix do deps.get + compile
+
+      - name: Publish
+        run: mix hex.publish --yes

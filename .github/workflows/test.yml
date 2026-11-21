@@ -8,10 +8,14 @@ name: Elixir CI
 on:
   push:
     branches: [ "main" ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ "main" ]
+  workflow_call:
+    inputs:
+      bench:
+        description: Run the benchmark job
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -72,6 +76,8 @@ jobs:
   bench:
 
     name: Benchmark
+    # inputs is empty on push and pull_request, so this only skips when a caller opts out
+    if: inputs.bench != false
     runs-on: ubuntu-latest
     permissions:
       # to push results from main to gh-pages
@@ -126,35 +132,3 @@ jobs:
             bench.json
             bench.txt
           retention-days: 90
-
-  publish:
-    
-    if: github.ref_type == 'tag'
-    needs: build
-    name: Publish to Hex.pm
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Set up Elixir
-        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
-        id: beam
-        with:
-          elixir-version: 'v1.20.5' # [Required] Define the Elixir version
-          otp-version: '29.1.2'      # [Required] Define the Erlang/OTP version
-
-      - name: Restore dependencies cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
-
-      - name: Build
-        run: mix do deps.get + compile
-
-      - name: Publish
-        run: mix hex.publish --yes
-        env:
-          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
