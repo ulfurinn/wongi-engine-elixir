@@ -4,7 +4,7 @@ defmodule Wongi.Engine.MixProject do
   def project do
     [
       app: :wongi_engine,
-      version: "0.9.23",
+      version: "0.10.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -18,7 +18,7 @@ defmodule Wongi.Engine.MixProject do
       source_url: "https://github.com/ulfurinn/wongi-engine-elixir",
       docs: [
         main: "Wongi.Engine",
-        extras: ["pages/ruby.md"],
+        extras: ["pages/ruby.md", "CHANGELOG.md"],
         logo: "./wongi.png"
       ],
       aliases: aliases(),
@@ -36,7 +36,6 @@ defmodule Wongi.Engine.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:comparable, "~> 1.0.0"},
       {:stream_data, "~> 1.1", only: :test},
       # dev tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

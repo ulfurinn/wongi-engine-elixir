@@ -7,10 +7,11 @@ defmodule Wongi.Engine.Filter.GTE do
   end
 
   defimpl Wongi.Engine.Filter do
+    alias Wongi.Engine.Compare
     alias Wongi.Engine.Filter.Common
 
     def pass?(%@for{a: a, b: b}, token) do
-      Comp.greater_or_equal?(Common.resolve(a, token), Common.resolve(b, token))
+      Compare.compare(Common.resolve(a, token), Common.resolve(b, token)) != :lt
     end
   end
 end
